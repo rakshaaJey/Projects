@@ -1,0 +1,361 @@
+html {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;  /* Prevents any scrollbars that might cause gaps */
+
+  /* your vibe background */
+  background: radial-gradient(circle at center, #222 0%, #000 100%);
+}
+
+.page {
+  width: 100vw;
+  height: 100vh;
+  /* Removed centering to allow full-screen desktop */
+}
+
+
+.desktop {
+  width: 100vw;     /* Full viewport width */
+  height: 100vh;  /* Leaves space for 5% taskbar at bottom */
+  /* Removed padding to avoid cutting into the full-screen area */
+
+  background-image: url("assets/background.webp");
+  background-size: cover;      /* fills screen */
+  background-position: center; /* centers image */
+  background-repeat: no-repeat;
+  position: relative;
+}
+
+.taskbar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100vw;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 8px 0 0;
+  box-sizing: border-box;
+  z-index: 20;
+
+  background: linear-gradient(
+    to bottom,
+    #2f7cff 0%,
+    #0b5ee8 45%,
+    #0646c7 100%
+  );
+
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.35),
+    inset 0 -2px 0 rgba(0, 0, 80, 0.35);
+}
+
+.start-button {
+  height: 100%;
+  padding: 0 18px 0 12px;
+  border: none;
+  color: white;
+  font-size: 19px;
+  font-weight: bold;
+  font-style: italic;
+  text-shadow: 1px 1px 2px #003300;
+  border-radius: 0 12px 12px 0;
+  cursor: pointer;
+
+  background: linear-gradient(
+    to bottom,
+    #64d64a 0%,
+    #2eb82e 45%,
+    #128512 100%
+  );
+
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.5),
+    inset -2px 0 0 rgba(0, 80, 0, 0.35);
+}
+
+.start-icon {
+  margin-right: 6px;
+  font-style: normal;
+}
+
+.icon {
+  width: 16px;
+  height: 16px;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+
+.task-button {
+  height: 28px;
+  min-width: 180px;
+  padding: 0 12px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 3px;
+  color: white;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  font-family: Trebuchet MS;
+
+  background: linear-gradient(
+    to bottom,
+    #4aa3ff 0%,
+    #1d75e8 50%,
+    #0c55c9 100%
+  );
+
+  box-shadow:
+    inset 1px 1px 0 rgba(255, 255, 255, 0.35),
+    inset -1px -1px 0 rgba(0, 0, 100, 0.4);
+}
+
+.taskbar-spacer {
+  flex: 1;
+}
+
+.clock {
+  height: 100%;
+  min-width: 80px;
+  display: grid;
+  place-items: center;
+  color: white;
+  font-size: 13px;
+  background: linear-gradient(to bottom, #19b7f2, #0b83d8);
+  box-shadow: inset 1px 0 rgba(255, 255, 255, 0.35);
+  z-index: 30;
+  font-family: Trebuchet MS;
+}
+
+.desktop-icon {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: move;
+  user-select: none;
+}
+
+.desktop-icon img {
+  width: 64px;
+  height: 64px;
+}
+
+.desktop-icon span {
+  font-size: 14px;
+  color: black;
+  text-align: center;
+  font-weight: bold;
+  margin-top: 4px;
+  font-family: Trebuchet MS;
+}
+
+.static {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.1;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.8'/%3E%3C/svg%3E");
+  animation: staticMove 0.25s steps(2) infinite;
+  z-index: 100;
+}
+
+.scanlines {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.08),
+    rgba(255, 255, 255, 0.08) 1px,
+    transparent 2px,
+    transparent 4px
+  );
+  opacity: 0.25;
+  z-index: 100;
+}
+
+.glare {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(circle at 30% 15%, rgba(255, 255, 255, 0.5), transparent 35%);
+  mix-blend-mode: screen;
+  z-index: 100;
+}
+
+@keyframes staticMove {
+  from {
+    transform: translate(0, 0);
+  }
+  to {
+    transform: translate(.1%, 2%);
+  }
+}
+
+.xp-window {
+  position: absolute;
+  background: #c0c0c0;
+  border: 2px solid #fff;
+  border-right-color: #404040;
+  border-bottom-color: #404040;
+  box-shadow: 2px 2px 0 #000;
+  z-index: 50;
+  overflow: hidden;
+}
+
+.xp-titlebar {
+  height: 26px;
+  background: linear-gradient(to right, #000080, #2f4fd8);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 4px 0 8px;
+  font-size: 13px;
+  cursor: move;
+  user-select: none;
+}
+
+.xp-close {
+  width: 22px;
+  height: 22px;
+  border: 2px solid #fff;
+  border-right-color: #404040;
+  border-bottom-color: #404040;
+  background: #c0c0c0;
+  color: black;
+  font-weight: bold;
+  line-height: 14px;
+  cursor: pointer;
+}
+
+.xp-content {
+  height: calc(100% - 26px);
+  padding: 18px;
+  font-family: "MS Sans Serif", Arial, sans-serif;
+  font-size: 13px;
+  color: black;
+  background: #c0c0c0;
+  overflow: auto;
+}
+
+.resume-entry {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+  margin-bottom: 0.75rem;
+}
+
+.resume-entry strong {
+  display: block;
+}
+
+.resume-year {
+  min-width: 80px;
+  text-align: right;
+  color: #333;
+  font-weight: bold;
+}
+
+.resume-bullet {
+  width: 6px;
+  height: 6px;
+  background: #333;
+  border-radius: 50%;
+  margin-right: 8px;
+  margin-top: 6px;
+ 
+}
+
+.xp-button {
+  margin-top: 24px;
+  min-width: 80px;
+  padding: 6px 18px;
+  background: #c0c0c0;
+  border: 2px solid #fff;
+  border-right-color: #404040;
+  border-bottom-color: #404040;
+}
+
+.resize-handle {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  right: 0;
+  bottom: 0;
+  cursor: nwse-resize;
+}
+
+.help-overlay {
+  font-family: Trebuchet MS;
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  display: grid;
+  place-items: center;
+  z-index: 150;
+}
+
+.help-popup {
+  width: min(640px, 90vw);
+  max-height: 80vh;
+  background: #c0c0c0;
+  border: 2px solid #fff;
+  border-right-color: #404040;
+  border-bottom-color: #404040;
+  box-shadow: 2px 2px 0 #000;
+  padding: 18px;
+  overflow: auto;
+}
+
+.help-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.help-header h2 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.help-close {
+  width: 26px;
+  height: 26px;
+  border: 2px solid #fff;
+  border-right-color: #404040;
+  border-bottom-color: #404040;
+  background: #c0c0c0;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 16px;
+}
+
+.help-body p,
+.help-body ul {
+  margin: 0 0 0.75rem 0;
+  font-size: 13px;
+}
+
+.help-body ul {
+  padding-left: 1.2rem;
+}
+
+.help-body li {
+  margin-bottom: 0.5rem;
+}
+
