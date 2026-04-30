@@ -80,7 +80,7 @@ type WindowProps = {
 
 function XPWindow({ title, children, onClose, onFocus, zIndex }: WindowProps) {
   const [pos, setPos] = useState({ x: 180, y: 100 });
-  const [size, setSize] = useState({ w: 520, h: 520 });
+  const [size, setSize] = useState({ w: 600, h: 520 });
   const [dragging, setDragging] = useState(false);
   const [resizing, setResizing] = useState(false);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
@@ -400,6 +400,26 @@ export function App() {
 
           <section>
             <hr />
+            <h3>Education</h3>
+              <div class="resume-entry">
+                <div>
+                  <strong>University of Waterloo · Bachelors of Computer Science</strong>
+                  <div><i>Waterloo, ON</i></div>
+                </div>
+                <div class="resume-year">Sept 2022 - Present</div>
+              </div>
+
+            <div class="resume-entry">
+                <div>
+                  <strong>Wilfrid Laurier University · Bachelors of Business Administration (Co-op)</strong>
+                  <div><i>Waterloo, ON</i></div>
+                </div>
+                <div class="resume-year">Sept 2022 - Present</div>
+              </div>
+          </section>
+
+          <section>
+            <hr />
             <h3>Skills</h3>
             
             <p>
@@ -510,10 +530,13 @@ export function App() {
               SpaceRock
             </a>
           </p>
-          <p>GitHub: 
+          <p>GitHub:
             <a href={"https://github.com/rakshaaJey"} target="_blank" rel="noopener noreferrer">
               RakshaaJey
             </a>
+          </p>
+          <p>Discord: 
+              space_rock
           </p>
         </>
       );
