@@ -31,6 +31,16 @@ function clamp(value: number, min: number, max: number) {
   return Math.max(min, Math.min(value, max));
 }
 
+function useIsMobile() {
+  const [mobile, setMobile] = useState(() => window.innerWidth < 768);
+  useEffect(() => {
+    const handler = () => setMobile(window.innerWidth < 768);
+    window.addEventListener("resize", handler);
+    return () => window.removeEventListener("resize", handler);
+  }, []);
+  return mobile;
+}
+
 function getRandomGridPosition(
   minX: number,
   maxX: number,
@@ -79,6 +89,7 @@ type WindowProps = {
 };
 
 function XPWindow({ title, children, onClose, onFocus, zIndex }: WindowProps) {
+  const isMobile = useIsMobile();
   const [pos, setPos] = useState({ x: 180, y: 100 });
   const [size, setSize] = useState({ w: 600, h: 520 });
   const [dragging, setDragging] = useState(false);
@@ -86,12 +97,14 @@ function XPWindow({ title, children, onClose, onFocus, zIndex }: WindowProps) {
   const [offset, setOffset] = useState({ x: 0, y: 0 });
 
   function startDrag(e: MouseEvent) {
+    if (isMobile) return;
     e.preventDefault();
     setDragging(true);
     setOffset({ x: e.clientX - pos.x, y: e.clientY - pos.y });
   }
 
   function startResize(e: MouseEvent) {
+    if (isMobile) return;
     e.preventDefault();
     e.stopPropagation();
     setResizing(true);
@@ -157,6 +170,7 @@ export function App() {
   const [time, setTime] = useState(new Date());
   const [openWindows, setOpenWindows] = useState<WindowData[]>([]);
   const [showHelp, setShowHelp] = useState(true);
+  const isMobile = useIsMobile();
 
   const [icons, setIcons] = useState<IconData[]>([
     { id: "folder", img: folderIcon, label: "projects", x: 0, y: 0 },
@@ -173,6 +187,17 @@ export function App() {
   }, []);
 
   useEffect(() => {
+    const mobile = window.innerWidth < 768;
+    if (mobile) {
+      setIcons((prev) =>
+        prev.map((icon, i) => ({
+          ...icon,
+          x: 10 + (i % 2) * GRID_X,
+          y: 10 + Math.floor(i / 2) * GRID_Y,
+        }))
+      );
+      return;
+    }
     const maxX = window.innerWidth - ICON_W;
     const maxY = window.innerHeight - TASKBAR_H - ICON_H;
     const occupied: Array<[number, number]> = [];
@@ -710,12 +735,20 @@ export function App() {
 
             <div class="help-body">
               <p>Use the icons on the desktop to open windows.</p>
-              <ul>
-                <li>Drag icons to move them around the desktop</li>
-                <li>Click an icon to open its associated window</li>
-                <li>Use the taskbar buttons to reopen windows</li>
-                <li>Resize and drag windows by using the title bar and corner handle</li>
-              </ul>
+              {isMobile ? (
+                <ul>
+                  <li>Tap an icon to open its associated window</li>
+                  <li>Use the taskbar buttons to switch between windows</li>
+                  <li>Scroll the taskbar sideways to see all icons</li>
+                </ul>
+              ) : (
+                <ul>
+                  <li>Drag icons to move them around the desktop</li>
+                  <li>Click an icon to open its associated window</li>
+                  <li>Use the taskbar buttons to reopen windows</li>
+                  <li>Resize and drag windows by using the title bar and corner handle</li>
+                </ul>
+              )}
               <p>Click the close button or anywhere outside this box to dismiss.</p>
             </div>
           </div>
@@ -728,18 +761,20 @@ export function App() {
           My Portfolio
         </button>
 
-        {icons.slice(0, 4).map((icon) => (
-          <button
-            class="task-button"
-            key={icon.id}
-            onClick={() => openWindow(icon.id)}
-          >
-            <span>
-              <img src={icon.img} class="icon" />
-            </span>
-            {icon.label}
-          </button>
-        ))}
+        <div class="taskbar-tasks">
+          {icons.slice(0, 4).map((icon) => (
+            <button
+              class="task-button"
+              key={icon.id}
+              onClick={() => openWindow(icon.id)}
+            >
+              <span>
+                <img src={icon.img} class="icon" />
+              </span>
+              {icon.label}
+            </button>
+          ))}
+        </div>
 
         <div class="taskbar-spacer" />
 

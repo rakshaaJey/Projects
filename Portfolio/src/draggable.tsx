@@ -18,15 +18,18 @@ export function DraggableIcon({ id, img, label, x, y, onMove, onClick }: Draggab
 
   function handleMouseDown(e: MouseEvent) {
     e.preventDefault();
-
     setDragging(true);
     setIsClick(true);
     setTempPos({ x, y });
+    setOffset({ x: e.clientX - x, y: e.clientY - y });
+  }
 
-    setOffset({
-      x: e.clientX - x,
-      y: e.clientY - y,
-    });
+  function handleTouchStart(e: TouchEvent) {
+    const touch = e.touches[0];
+    setDragging(true);
+    setIsClick(true);
+    setTempPos({ x, y });
+    setOffset({ x: touch.clientX - x, y: touch.clientY - y });
   }
 
   useEffect(() => {
@@ -38,10 +41,17 @@ export function DraggableIcon({ id, img, label, x, y, onMove, onClick }: Draggab
       if (Math.abs(nextX - tempPos.x) > 4 || Math.abs(nextY - tempPos.y) > 4) {
         setIsClick(false);
       }
-      setTempPos({
-        x: nextX,
-        y: nextY,
-      });
+      setTempPos({ x: nextX, y: nextY });
+    }
+
+    function handleTouchMove(e: TouchEvent) {
+      const touch = e.touches[0];
+      const nextX = touch.clientX - offset.x;
+      const nextY = touch.clientY - offset.y;
+      if (Math.abs(nextX - tempPos.x) > 8 || Math.abs(nextY - tempPos.y) > 8) {
+        setIsClick(false);
+      }
+      setTempPos({ x: nextX, y: nextY });
     }
 
     function handleMouseUp() {
@@ -53,12 +63,25 @@ export function DraggableIcon({ id, img, label, x, y, onMove, onClick }: Draggab
       }
     }
 
+    function handleTouchEnd() {
+      setDragging(false);
+      if (isClick) {
+        onClick?.();
+      } else {
+        onMove(id, tempPos.x, tempPos.y);
+      }
+    }
+
     window.addEventListener("mousemove", handleMouseMove);
     window.addEventListener("mouseup", handleMouseUp);
+    window.addEventListener("touchmove", handleTouchMove, { passive: true });
+    window.addEventListener("touchend", handleTouchEnd);
 
     return () => {
       window.removeEventListener("mousemove", handleMouseMove);
       window.removeEventListener("mouseup", handleMouseUp);
+      window.removeEventListener("touchmove", handleTouchMove);
+      window.removeEventListener("touchend", handleTouchEnd);
     };
   }, [dragging, offset.x, offset.y, tempPos.x, tempPos.y]);
 
@@ -70,6 +93,7 @@ export function DraggableIcon({ id, img, label, x, y, onMove, onClick }: Draggab
         top: `${dragging ? tempPos.y : y}px`,
       }}
       onMouseDown={handleMouseDown}
+      onTouchStart={handleTouchStart}
     >
       <img src={img} />
       <span>{label}</span>
