@@ -573,8 +573,8 @@ export function App() {
         <>
           <h2>Contact Me!</h2>
           <p>Email: 
-            <a href={"mailto:rakshaajey@gmail.com"} target="_blank" rel="noopener noreferrer">
-              rakshaajey@gmail.com
+            <a href={"mailto:rakshaajeyarajah@gmail.com"} target="_blank" rel="noopener noreferrer">
+              rakshaajeyarajah@gmail.com
             </a>
           </p>
           <p>LinkedIn: 
