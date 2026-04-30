@@ -1,0 +1,1612 @@
+[
+  {
+    "album": {
+      "album_type": "album",
+      "artists": [
+        {
+          "external_urls": {
+            "spotify": "https://open.spotify.com/artist/6qqNVTkY8uBg9cP3Jd7DAH"
+          },
+          "href": "https://api.spotify.com/v1/artists/6qqNVTkY8uBg9cP3Jd7DAH",
+          "id": "6qqNVTkY8uBg9cP3Jd7DAH",
+          "name": "Billie Eilish",
+          "type": "artist",
+          "uri": "spotify:artist:6qqNVTkY8uBg9cP3Jd7DAH"
+        }
+      ],
+      "external_urls": {
+        "spotify": "https://open.spotify.com/album/7aJuG4TFXa2hmE4z1yxc3n"
+      },
+      "href": "https://api.spotify.com/v1/albums/7aJuG4TFXa2hmE4z1yxc3n",
+      "id": "7aJuG4TFXa2hmE4z1yxc3n",
+      "images": [
+        {
+          "height": 640,
+          "url": "https://i.scdn.co/image/ab67616d0000b27371d62ea7ea8a5be92d3c1f62",
+          "width": 640
+        },
+        {
+          "height": 300,
+          "url": "https://i.scdn.co/image/ab67616d00001e0271d62ea7ea8a5be92d3c1f62",
+          "width": 300
+        },
+        {
+          "height": 64,
+          "url": "https://i.scdn.co/image/ab67616d0000485171d62ea7ea8a5be92d3c1f62",
+          "width": 64
+        }
+      ],
+      "is_playable": true,
+      "name": "HIT ME HARD AND SOFT",
+      "release_date": "2024-05-17",
+      "release_date_precision": "day",
+      "total_tracks": 10,
+      "type": "album",
+      "uri": "spotify:album:7aJuG4TFXa2hmE4z1yxc3n"
+    },
+    "artists": [
+      {
+        "external_urls": {
+          "spotify": "https://open.spotify.com/artist/6qqNVTkY8uBg9cP3Jd7DAH"
+        },
+        "href": "https://api.spotify.com/v1/artists/6qqNVTkY8uBg9cP3Jd7DAH",
+        "id": "6qqNVTkY8uBg9cP3Jd7DAH",
+        "name": "Billie Eilish",
+        "type": "artist",
+        "uri": "spotify:artist:6qqNVTkY8uBg9cP3Jd7DAH"
+      }
+    ],
+    "disc_number": 1,
+    "duration_ms": 303440,
+    "explicit": false,
+    "external_ids": {
+      "isrc": "USUM72401988"
+    },
+    "external_urls": {
+      "spotify": "https://open.spotify.com/track/7BRD7x5pt8Lqa1eGYC4dzj"
+    },
+    "href": "https://api.spotify.com/v1/tracks/7BRD7x5pt8Lqa1eGYC4dzj",
+    "id": "7BRD7x5pt8Lqa1eGYC4dzj",
+    "is_local": false,
+    "is_playable": true,
+    "name": "CHIHIRO",
+    "track_number": 3,
+    "type": "track",
+    "uri": "spotify:track:7BRD7x5pt8Lqa1eGYC4dzj"
+  },
+  {
+    "album": {
+      "album_type": "album",
+      "artists": [
+        {
+          "external_urls": {
+            "spotify": "https://open.spotify.com/artist/6qqNVTkY8uBg9cP3Jd7DAH"
+          },
+          "href": "https://api.spotify.com/v1/artists/6qqNVTkY8uBg9cP3Jd7DAH",
+          "id": "6qqNVTkY8uBg9cP3Jd7DAH",
+          "name": "Billie Eilish",
+          "type": "artist",
+          "uri": "spotify:artist:6qqNVTkY8uBg9cP3Jd7DAH"
+        }
+      ],
+      "external_urls": {
+        "spotify": "https://open.spotify.com/album/7aJuG4TFXa2hmE4z1yxc3n"
+      },
+      "href": "https://api.spotify.com/v1/albums/7aJuG4TFXa2hmE4z1yxc3n",
+      "id": "7aJuG4TFXa2hmE4z1yxc3n",
+      "images": [
+        {
+          "height": 640,
+          "url": "https://i.scdn.co/image/ab67616d0000b27371d62ea7ea8a5be92d3c1f62",
+          "width": 640
+        },
+        {
+          "height": 300,
+          "url": "https://i.scdn.co/image/ab67616d00001e0271d62ea7ea8a5be92d3c1f62",
+          "width": 300
+        },
+        {
+          "height": 64,
+          "url": "https://i.scdn.co/image/ab67616d0000485171d62ea7ea8a5be92d3c1f62",
+          "width": 64
+        }
+      ],
+      "is_playable": true,
+      "name": "HIT ME HARD AND SOFT",
+      "release_date": "2024-05-17",
+      "release_date_precision": "day",
+      "total_tracks": 10,
+      "type": "album",
+      "uri": "spotify:album:7aJuG4TFXa2hmE4z1yxc3n"
+    },
+    "artists": [
+      {
+        "external_urls": {
+          "spotify": "https://open.spotify.com/artist/6qqNVTkY8uBg9cP3Jd7DAH"
+        },
+        "href": "https://api.spotify.com/v1/artists/6qqNVTkY8uBg9cP3Jd7DAH",
+        "id": "6qqNVTkY8uBg9cP3Jd7DAH",
+        "name": "Billie Eilish",
+        "type": "artist",
+        "uri": "spotify:artist:6qqNVTkY8uBg9cP3Jd7DAH"
+      }
+    ],
+    "disc_number": 1,
+    "duration_ms": 261466,
+    "explicit": false,
+    "external_ids": {
+      "isrc": "USUM72401993"
+    },
+    "external_urls": {
+      "spotify": "https://open.spotify.com/track/3QaPy1KgI7nu9FJEQUgn6h"
+    },
+    "href": "https://api.spotify.com/v1/tracks/3QaPy1KgI7nu9FJEQUgn6h",
+    "id": "3QaPy1KgI7nu9FJEQUgn6h",
+    "is_local": false,
+    "is_playable": true,
+    "name": "WILDFLOWER",
+    "track_number": 5,
+    "type": "track",
+    "uri": "spotify:track:3QaPy1KgI7nu9FJEQUgn6h"
+  },
+  {
+    "album": {
+      "album_type": "album",
+      "artists": [
+        {
+          "external_urls": {
+            "spotify": "https://open.spotify.com/artist/1RyvyyTE3xzB2ZywiAwp0i"
+          },
+          "href": "https://api.spotify.com/v1/artists/1RyvyyTE3xzB2ZywiAwp0i",
+          "id": "1RyvyyTE3xzB2ZywiAwp0i",
+          "name": "Future",
+          "type": "artist",
+          "uri": "spotify:artist:1RyvyyTE3xzB2ZywiAwp0i"
+        },
+        {
+          "external_urls": {
+            "spotify": "https://open.spotify.com/artist/0iEtIxbK0KxaSlF7G42ZOp"
+          },
+          "href": "https://api.spotify.com/v1/artists/0iEtIxbK0KxaSlF7G42ZOp",
+          "id": "0iEtIxbK0KxaSlF7G42ZOp",
+          "name": "Metro Boomin",
+          "type": "artist",
+          "uri": "spotify:artist:0iEtIxbK0KxaSlF7G42ZOp"
+        }
+      ],
+      "external_urls": {
+        "spotify": "https://open.spotify.com/album/4iqbFIdGOTzXeDtt9owjQn"
+      },
+      "href": "https://api.spotify.com/v1/albums/4iqbFIdGOTzXeDtt9owjQn",
+      "id": "4iqbFIdGOTzXeDtt9owjQn",
+      "images": [
+        {
+          "height": 640,
+          "url": "https://i.scdn.co/image/ab67616d0000b273cec3fc072352b5f4f637d9fa",
+          "width": 640
+        },
+        {
+          "height": 300,
+          "url": "https://i.scdn.co/image/ab67616d00001e02cec3fc072352b5f4f637d9fa",
+          "width": 300
+        },
+        {
+          "height": 64,
+          "url": "https://i.scdn.co/image/ab67616d00004851cec3fc072352b5f4f637d9fa",
+          "width": 64
+        }
+      ],
+      "is_playable": true,
+      "name": "WE DON'T TRUST YOU",
+      "release_date": "2024-03-22",
+      "release_date_precision": "day",
+      "total_tracks": 17,
+      "type": "album",
+      "uri": "spotify:album:4iqbFIdGOTzXeDtt9owjQn"
+    },
+    "artists": [
+      {
+        "external_urls": {
+          "spotify": "https://open.spotify.com/artist/1RyvyyTE3xzB2ZywiAwp0i"
+        },
+        "href": "https://api.spotify.com/v1/artists/1RyvyyTE3xzB2ZywiAwp0i",
+        "id": "1RyvyyTE3xzB2ZywiAwp0i",
+        "name": "Future",
+        "type": "artist",
+        "uri": "spotify:artist:1RyvyyTE3xzB2ZywiAwp0i"
+      },
+      {
+        "external_urls": {
+          "spotify": "https://open.spotify.com/artist/0iEtIxbK0KxaSlF7G42ZOp"
+        },
+        "href": "https://api.spotify.com/v1/artists/0iEtIxbK0KxaSlF7G42ZOp",
+        "id": "0iEtIxbK0KxaSlF7G42ZOp",
+        "name": "Metro Boomin",
+        "type": "artist",
+        "uri": "spotify:artist:0iEtIxbK0KxaSlF7G42ZOp"
+      },
+      {
+        "external_urls": {
+          "spotify": "https://open.spotify.com/artist/0Y5tJX1MQlPlqiwlOH1tJY"
+        },
+        "href": "https://api.spotify.com/v1/artists/0Y5tJX1MQlPlqiwlOH1tJY",
+        "id": "0Y5tJX1MQlPlqiwlOH1tJY",
+        "name": "Travis Scott",
+        "type": "artist",
+        "uri": "spotify:artist:0Y5tJX1MQlPlqiwlOH1tJY"
+      },
+      {
+        "external_urls": {
+          "spotify": "https://open.spotify.com/artist/699OTQXzgjhIYAHMy9RyPD"
+        },
+        "href": "https://api.spotify.com/v1/artists/699OTQXzgjhIYAHMy9RyPD",
+        "id": "699OTQXzgjhIYAHMy9RyPD",
+        "name": "Playboi Carti",
+        "type": "artist",
+        "uri": "spotify:artist:699OTQXzgjhIYAHMy9RyPD"
+      }
+    ],
+    "disc_number": 1,
+    "duration_ms": 228266,
+    "explicit": true,
+    "external_ids": {
+      "isrc": "USSM12402033"
+    },
+    "external_urls": {
+      "spotify": "https://open.spotify.com/track/28drn6tQo95MRvO0jQEo5C"
+    },
+    "href": "https://api.spotify.com/v1/tracks/28drn6tQo95MRvO0jQEo5C",
+    "id": "28drn6tQo95MRvO0jQEo5C",
+    "is_local": false,
+    "is_playable": true,
+    "name": "Type Shit",
+    "track_number": 4,
+    "type": "track",
+    "uri": "spotify:track:28drn6tQo95MRvO0jQEo5C"
+  },
+  {
+    "album": {
+      "album_type": "album",
+      "artists": [
+        {
+          "external_urls": {
+            "spotify": "https://open.spotify.com/artist/3l0CmX0FuQjFxr8SK7Vqag"
+          },
+          "href": "https://api.spotify.com/v1/artists/3l0CmX0FuQjFxr8SK7Vqag",
+          "id": "3l0CmX0FuQjFxr8SK7Vqag",
+          "name": "Clairo",
+          "type": "artist",
+          "uri": "spotify:artist:3l0CmX0FuQjFxr8SK7Vqag"
+        }
+      ],
+      "external_urls": {
+        "spotify": "https://open.spotify.com/album/1KNUCVXgIxKUGiuEB8eG0i"
+      },
+      "href": "https://api.spotify.com/v1/albums/1KNUCVXgIxKUGiuEB8eG0i",
+      "id": "1KNUCVXgIxKUGiuEB8eG0i",
+      "images": [
+        {
+          "height": 640,
+          "url": "https://i.scdn.co/image/ab67616d0000b273193c2fafdce8f116b5ca0a78",
+          "width": 640
+        },
+        {
+          "height": 300,
+          "url": "https://i.scdn.co/image/ab67616d00001e02193c2fafdce8f116b5ca0a78",
+          "width": 300
+        },
+        {
+          "height": 64,
+          "url": "https://i.scdn.co/image/ab67616d00004851193c2fafdce8f116b5ca0a78",
+          "width": 64
+        }
+      ],
+      "is_playable": true,
+      "name": "Charm",
+      "release_date": "2024-07-12",
+      "release_date_precision": "day",
+      "total_tracks": 11,
+      "type": "album",
+      "uri": "spotify:album:1KNUCVXgIxKUGiuEB8eG0i"
+    },
+    "artists": [
+      {
+        "external_urls": {
+          "spotify": "https://open.spotify.com/artist/3l0CmX0FuQjFxr8SK7Vqag"
+        },
+        "href": "https://api.spotify.com/v1/artists/3l0CmX0FuQjFxr8SK7Vqag",
+        "id": "3l0CmX0FuQjFxr8SK7Vqag",
+        "name": "Clairo",
+        "type": "artist",
+        "uri": "spotify:artist:3l0CmX0FuQjFxr8SK7Vqag"
+      }
+    ],
+    "disc_number": 1,
+    "duration_ms": 205263,
+    "explicit": false,
+    "external_ids": {
+      "isrc": "USA2P2416230"
+    },
+    "external_urls": {
+      "spotify": "https://open.spotify.com/track/6FcDxtnGfsYHOcGkXN2OIG"
+    },
+    "href": "https://api.spotify.com/v1/tracks/6FcDxtnGfsYHOcGkXN2OIG",
+    "id": "6FcDxtnGfsYHOcGkXN2OIG",
+    "is_local": false,
+    "is_playable": true,
+    "name": "Add Up My Love",
+    "track_number": 8,
+    "type": "track",
+    "uri": "spotify:track:6FcDxtnGfsYHOcGkXN2OIG"
+  },
+  {
+    "album": {
+      "album_type": "album",
+      "artists": [
+        {
+          "external_urls": {
+            "spotify": "https://open.spotify.com/artist/6qqNVTkY8uBg9cP3Jd7DAH"
+          },
+          "href": "https://api.spotify.com/v1/artists/6qqNVTkY8uBg9cP3Jd7DAH",
+          "id": "6qqNVTkY8uBg9cP3Jd7DAH",
+          "name": "Billie Eilish",
+          "type": "artist",
+          "uri": "spotify:artist:6qqNVTkY8uBg9cP3Jd7DAH"
+        }
+      ],
+      "external_urls": {
+        "spotify": "https://open.spotify.com/album/7aJuG4TFXa2hmE4z1yxc3n"
+      },
+      "href": "https://api.spotify.com/v1/albums/7aJuG4TFXa2hmE4z1yxc3n",
+      "id": "7aJuG4TFXa2hmE4z1yxc3n",
+      "images": [
+        {
+          "height": 640,
+          "url": "https://i.scdn.co/image/ab67616d0000b27371d62ea7ea8a5be92d3c1f62",
+          "width": 640
+        },
+        {
+          "height": 300,
+          "url": "https://i.scdn.co/image/ab67616d00001e0271d62ea7ea8a5be92d3c1f62",
+          "width": 300
+        },
+        {
+          "height": 64,
+          "url": "https://i.scdn.co/image/ab67616d0000485171d62ea7ea8a5be92d3c1f62",
+          "width": 64
+        }
+      ],
+      "is_playable": true,
+      "name": "HIT ME HARD AND SOFT",
+      "release_date": "2024-05-17",
+      "release_date_precision": "day",
+      "total_tracks": 10,
+      "type": "album",
+      "uri": "spotify:album:7aJuG4TFXa2hmE4z1yxc3n"
+    },
+    "artists": [
+      {
+        "external_urls": {
+          "spotify": "https://open.spotify.com/artist/6qqNVTkY8uBg9cP3Jd7DAH"
+        },
+        "href": "https://api.spotify.com/v1/artists/6qqNVTkY8uBg9cP3Jd7DAH",
+        "id": "6qqNVTkY8uBg9cP3Jd7DAH",
+        "name": "Billie Eilish",
+        "type": "artist",
+        "uri": "spotify:artist:6qqNVTkY8uBg9cP3Jd7DAH"
+      }
+    ],
+    "disc_number": 1,
+    "duration_ms": 298440,
+    "explicit": false,
+    "external_ids": {
+      "isrc": "USUM72401987"
+    },
+    "external_urls": {
+      "spotify": "https://open.spotify.com/track/7DpUoxGSdlDHfqCYj0otzU"
+    },
+    "href": "https://api.spotify.com/v1/tracks/7DpUoxGSdlDHfqCYj0otzU",
+    "id": "7DpUoxGSdlDHfqCYj0otzU",
+    "is_local": false,
+    "is_playable": true,
+    "name": "BITTERSUITE",
+    "track_number": 9,
+    "type": "track",
+    "uri": "spotify:track:7DpUoxGSdlDHfqCYj0otzU"
+  },
+  {
+    "album": {
+      "album_type": "album",
+      "artists": [
+        {
+          "external_urls": {
+            "spotify": "https://open.spotify.com/artist/6qqNVTkY8uBg9cP3Jd7DAH"
+          },
+          "href": "https://api.spotify.com/v1/artists/6qqNVTkY8uBg9cP3Jd7DAH",
+          "id": "6qqNVTkY8uBg9cP3Jd7DAH",
+          "name": "Billie Eilish",
+          "type": "artist",
+          "uri": "spotify:artist:6qqNVTkY8uBg9cP3Jd7DAH"
+        }
+      ],
+      "external_urls": {
+        "spotify": "https://open.spotify.com/album/7aJuG4TFXa2hmE4z1yxc3n"
+      },
+      "href": "https://api.spotify.com/v1/albums/7aJuG4TFXa2hmE4z1yxc3n",
+      "id": "7aJuG4TFXa2hmE4z1yxc3n",
+      "images": [
+        {
+          "height": 640,
+          "url": "https://i.scdn.co/image/ab67616d0000b27371d62ea7ea8a5be92d3c1f62",
+          "width": 640
+        },
+        {
+          "height": 300,
+          "url": "https://i.scdn.co/image/ab67616d00001e0271d62ea7ea8a5be92d3c1f62",
+          "width": 300
+        },
+        {
+          "height": 64,
+          "url": "https://i.scdn.co/image/ab67616d0000485171d62ea7ea8a5be92d3c1f62",
+          "width": 64
+        }
+      ],
+      "is_playable": true,
+      "name": "HIT ME HARD AND SOFT",
+      "release_date": "2024-05-17",
+      "release_date_precision": "day",
+      "total_tracks": 10,
+      "type": "album",
+      "uri": "spotify:album:7aJuG4TFXa2hmE4z1yxc3n"
+    },
+    "artists": [
+      {
+        "external_urls": {
+          "spotify": "https://open.spotify.com/artist/6qqNVTkY8uBg9cP3Jd7DAH"
+        },
+        "href": "https://api.spotify.com/v1/artists/6qqNVTkY8uBg9cP3Jd7DAH",
+        "id": "6qqNVTkY8uBg9cP3Jd7DAH",
+        "name": "Billie Eilish",
+        "type": "artist",
+        "uri": "spotify:artist:6qqNVTkY8uBg9cP3Jd7DAH"
+      }
+    ],
+    "disc_number": 1,
+    "duration_ms": 210373,
+    "explicit": false,
+    "external_ids": {
+      "isrc": "USUM72401994"
+    },
+    "external_urls": {
+      "spotify": "https://open.spotify.com/track/6dOtVTDdiauQNBQEDOtlAB"
+    },
+    "href": "https://api.spotify.com/v1/tracks/6dOtVTDdiauQNBQEDOtlAB",
+    "id": "6dOtVTDdiauQNBQEDOtlAB",
+    "is_local": false,
+    "is_playable": true,
+    "name": "BIRDS OF A FEATHER",
+    "track_number": 4,
+    "type": "track",
+    "uri": "spotify:track:6dOtVTDdiauQNBQEDOtlAB"
+  },
+  {
+    "album": {
+      "album_type": "album",
+      "artists": [
+        {
+          "external_urls": {
+            "spotify": "https://open.spotify.com/artist/0iEtIxbK0KxaSlF7G42ZOp"
+          },
+          "href": "https://api.spotify.com/v1/artists/0iEtIxbK0KxaSlF7G42ZOp",
+          "id": "0iEtIxbK0KxaSlF7G42ZOp",
+          "name": "Metro Boomin",
+          "type": "artist",
+          "uri": "spotify:artist:0iEtIxbK0KxaSlF7G42ZOp"
+        }
+      ],
+      "external_urls": {
+        "spotify": "https://open.spotify.com/album/7txGsnDSqVMoRl6RQ9XyZP"
+      },
+      "href": "https://api.spotify.com/v1/albums/7txGsnDSqVMoRl6RQ9XyZP",
+      "id": "7txGsnDSqVMoRl6RQ9XyZP",
+      "images": [
+        {
+          "height": 640,
+          "url": "https://i.scdn.co/image/ab67616d0000b273c4fee55d7b51479627c31f89",
+          "width": 640
+        },
+        {
+          "height": 300,
+          "url": "https://i.scdn.co/image/ab67616d00001e02c4fee55d7b51479627c31f89",
+          "width": 300
+        },
+        {
+          "height": 64,
+          "url": "https://i.scdn.co/image/ab67616d00004851c4fee55d7b51479627c31f89",
+          "width": 64
+        }
+      ],
+      "is_playable": true,
+      "name": "HEROES & VILLAINS",
+      "release_date": "2022-12-02",
+      "release_date_precision": "day",
+      "total_tracks": 15,
+      "type": "album",
+      "uri": "spotify:album:7txGsnDSqVMoRl6RQ9XyZP"
+    },
+    "artists": [
+      {
+        "external_urls": {
+          "spotify": "https://open.spotify.com/artist/0iEtIxbK0KxaSlF7G42ZOp"
+        },
+        "href": "https://api.spotify.com/v1/artists/0iEtIxbK0KxaSlF7G42ZOp",
+        "id": "0iEtIxbK0KxaSlF7G42ZOp",
+        "name": "Metro Boomin",
+        "type": "artist",
+        "uri": "spotify:artist:0iEtIxbK0KxaSlF7G42ZOp"
+      },
+      {
+        "external_urls": {
+          "spotify": "https://open.spotify.com/artist/1RyvyyTE3xzB2ZywiAwp0i"
+        },
+        "href": "https://api.spotify.com/v1/artists/1RyvyyTE3xzB2ZywiAwp0i",
+        "id": "1RyvyyTE3xzB2ZywiAwp0i",
+        "name": "Future",
+        "type": "artist",
+        "uri": "spotify:artist:1RyvyyTE3xzB2ZywiAwp0i"
+      },
+      {
+        "external_urls": {
+          "spotify": "https://open.spotify.com/artist/4Gso3d4CscCijv0lmajZWs"
+        },
+        "href": "https://api.spotify.com/v1/artists/4Gso3d4CscCijv0lmajZWs",
+        "id": "4Gso3d4CscCijv0lmajZWs",
+        "name": "Don Toliver",
+        "type": "artist",
+        "uri": "spotify:artist:4Gso3d4CscCijv0lmajZWs"
+      }
+    ],
+    "disc_number": 1,
+    "duration_ms": 199920,
+    "explicit": true,
+    "external_ids": {
+      "isrc": "USUG12208784"
+    },
+    "external_urls": {
+      "spotify": "https://open.spotify.com/track/2Hh3ETdQKrmSI3QS0hme7g"
+    },
+    "href": "https://api.spotify.com/v1/tracks/2Hh3ETdQKrmSI3QS0hme7g",
+    "id": "2Hh3ETdQKrmSI3QS0hme7g",
+    "is_local": false,
+    "is_playable": true,
+    "name": "Too Many Nights (feat. Don Toliver & with Future)",
+    "track_number": 3,
+    "type": "track",
+    "uri": "spotify:track:2Hh3ETdQKrmSI3QS0hme7g"
+  },
+  {
+    "album": {
+      "album_type": "single",
+      "artists": [
+        {
+          "external_urls": {
+            "spotify": "https://open.spotify.com/artist/2txHhyCwHjUEpJjWrEyqyX"
+          },
+          "href": "https://api.spotify.com/v1/artists/2txHhyCwHjUEpJjWrEyqyX",
+          "id": "2txHhyCwHjUEpJjWrEyqyX",
+          "name": "Tom Odell",
+          "type": "artist",
+          "uri": "spotify:artist:2txHhyCwHjUEpJjWrEyqyX"
+        }
+      ],
+      "external_urls": {
+        "spotify": "https://open.spotify.com/album/0BdmqjXLz0L6gF78ldUYHp"
+      },
+      "href": "https://api.spotify.com/v1/albums/0BdmqjXLz0L6gF78ldUYHp",
+      "id": "0BdmqjXLz0L6gF78ldUYHp",
+      "images": [
+        {
+          "height": 640,
+          "url": "https://i.scdn.co/image/ab67616d0000b273530fa3c87225dc153c064691",
+          "width": 640
+        },
+        {
+          "height": 300,
+          "url": "https://i.scdn.co/image/ab67616d00001e02530fa3c87225dc153c064691",
+          "width": 300
+        },
+        {
+          "height": 64,
+          "url": "https://i.scdn.co/image/ab67616d00004851530fa3c87225dc153c064691",
+          "width": 64
+        }
+      ],
+      "is_playable": true,
+      "name": "Black Friday",
+      "release_date": "2023-09-22",
+      "release_date_precision": "day",
+      "total_tracks": 1,
+      "type": "album",
+      "uri": "spotify:album:0BdmqjXLz0L6gF78ldUYHp"
+    },
+    "artists": [
+      {
+        "external_urls": {
+          "spotify": "https://open.spotify.com/artist/2txHhyCwHjUEpJjWrEyqyX"
+        },
+        "href": "https://api.spotify.com/v1/artists/2txHhyCwHjUEpJjWrEyqyX",
+        "id": "2txHhyCwHjUEpJjWrEyqyX",
+        "name": "Tom Odell",
+        "type": "artist",
+        "uri": "spotify:artist:2txHhyCwHjUEpJjWrEyqyX"
+      }
+    ],
+    "disc_number": 1,
+    "duration_ms": 221510,
+    "explicit": false,
+    "external_ids": {
+      "isrc": "USA2P2342595"
+    },
+    "external_urls": {
+      "spotify": "https://open.spotify.com/track/1XTY6rA7XQosc0ynkkE9kN"
+    },
+    "href": "https://api.spotify.com/v1/tracks/1XTY6rA7XQosc0ynkkE9kN",
+    "id": "1XTY6rA7XQosc0ynkkE9kN",
+    "is_local": false,
+    "is_playable": true,
+    "name": "Black Friday",
+    "track_number": 1,
+    "type": "track",
+    "uri": "spotify:track:1XTY6rA7XQosc0ynkkE9kN"
+  },
+  {
+    "album": {
+      "album_type": "single",
+      "artists": [
+        {
+          "external_urls": {
+            "spotify": "https://open.spotify.com/artist/74KM79TiuVKeVCqs8QtB0B"
+          },
+          "href": "https://api.spotify.com/v1/artists/74KM79TiuVKeVCqs8QtB0B",
+          "id": "74KM79TiuVKeVCqs8QtB0B",
+          "name": "Sabrina Carpenter",
+          "type": "artist",
+          "uri": "spotify:artist:74KM79TiuVKeVCqs8QtB0B"
+        }
+      ],
+      "external_urls": {
+        "spotify": "https://open.spotify.com/album/5quMTd5zeI9yW5UDua8wS4"
+      },
+      "href": "https://api.spotify.com/v1/albums/5quMTd5zeI9yW5UDua8wS4",
+      "id": "5quMTd5zeI9yW5UDua8wS4",
+      "images": [
+        {
+          "height": 640,
+          "url": "https://i.scdn.co/image/ab67616d0000b273659cd4673230913b3918e0d5",
+          "width": 640
+        },
+        {
+          "height": 300,
+          "url": "https://i.scdn.co/image/ab67616d00001e02659cd4673230913b3918e0d5",
+          "width": 300
+        },
+        {
+          "height": 64,
+          "url": "https://i.scdn.co/image/ab67616d00004851659cd4673230913b3918e0d5",
+          "width": 64
+        }
+      ],
+      "is_playable": true,
+      "name": "Espresso",
+      "release_date": "2024-04-12",
+      "release_date_precision": "day",
+      "total_tracks": 1,
+      "type": "album",
+      "uri": "spotify:album:5quMTd5zeI9yW5UDua8wS4"
+    },
+    "artists": [
+      {
+        "external_urls": {
+          "spotify": "https://open.spotify.com/artist/74KM79TiuVKeVCqs8QtB0B"
+        },
+        "href": "https://api.spotify.com/v1/artists/74KM79TiuVKeVCqs8QtB0B",
+        "id": "74KM79TiuVKeVCqs8QtB0B",
+        "name": "Sabrina Carpenter",
+        "type": "artist",
+        "uri": "spotify:artist:74KM79TiuVKeVCqs8QtB0B"
+      }
+    ],
+    "disc_number": 1,
+    "duration_ms": 175459,
+    "explicit": true,
+    "external_ids": {
+      "isrc": "USUM72403305"
+    },
+    "external_urls": {
+      "spotify": "https://open.spotify.com/track/2qSkIjg1o9h3YT9RAgYN75"
+    },
+    "href": "https://api.spotify.com/v1/tracks/2qSkIjg1o9h3YT9RAgYN75",
+    "id": "2qSkIjg1o9h3YT9RAgYN75",
+    "is_local": false,
+    "is_playable": true,
+    "name": "Espresso",
+    "track_number": 1,
+    "type": "track",
+    "uri": "spotify:track:2qSkIjg1o9h3YT9RAgYN75"
+  },
+  {
+    "album": {
+      "album_type": "album",
+      "artists": [
+        {
+          "external_urls": {
+            "spotify": "https://open.spotify.com/artist/3TVXtAsR1Inumwj472S9r4"
+          },
+          "href": "https://api.spotify.com/v1/artists/3TVXtAsR1Inumwj472S9r4",
+          "id": "3TVXtAsR1Inumwj472S9r4",
+          "name": "Drake",
+          "type": "artist",
+          "uri": "spotify:artist:3TVXtAsR1Inumwj472S9r4"
+        }
+      ],
+      "external_urls": {
+        "spotify": "https://open.spotify.com/album/6X1x82kppWZmDzlXXK3y3q"
+      },
+      "href": "https://api.spotify.com/v1/albums/6X1x82kppWZmDzlXXK3y3q",
+      "id": "6X1x82kppWZmDzlXXK3y3q",
+      "images": [
+        {
+          "height": 640,
+          "url": "https://i.scdn.co/image/ab67616d0000b273c7ea04a9b455e3f68ef82550",
+          "width": 640
+        },
+        {
+          "height": 300,
+          "url": "https://i.scdn.co/image/ab67616d00001e02c7ea04a9b455e3f68ef82550",
+          "width": 300
+        },
+        {
+          "height": 64,
+          "url": "https://i.scdn.co/image/ab67616d00004851c7ea04a9b455e3f68ef82550",
+          "width": 64
+        }
+      ],
+      "is_playable": true,
+      "name": "Take Care (Deluxe)",
+      "release_date": "2011-11-15",
+      "release_date_precision": "day",
+      "total_tracks": 19,
+      "type": "album",
+      "uri": "spotify:album:6X1x82kppWZmDzlXXK3y3q"
+    },
+    "artists": [
+      {
+        "external_urls": {
+          "spotify": "https://open.spotify.com/artist/3TVXtAsR1Inumwj472S9r4"
+        },
+        "href": "https://api.spotify.com/v1/artists/3TVXtAsR1Inumwj472S9r4",
+        "id": "3TVXtAsR1Inumwj472S9r4",
+        "name": "Drake",
+        "type": "artist",
+        "uri": "spotify:artist:3TVXtAsR1Inumwj472S9r4"
+      }
+    ],
+    "disc_number": 1,
+    "duration_ms": 237733,
+    "explicit": true,
+    "external_ids": {
+      "isrc": "USCM51100572"
+    },
+    "external_urls": {
+      "spotify": "https://open.spotify.com/track/0jF2AdhsalO1L7KkhK4LE5"
+    },
+    "href": "https://api.spotify.com/v1/tracks/0jF2AdhsalO1L7KkhK4LE5",
+    "id": "0jF2AdhsalO1L7KkhK4LE5",
+    "is_local": false,
+    "is_playable": true,
+    "name": "Practice",
+    "track_number": 17,
+    "type": "track",
+    "uri": "spotify:track:0jF2AdhsalO1L7KkhK4LE5"
+  },
+  {
+    "album": {
+      "album_type": "album",
+      "artists": [
+        {
+          "external_urls": {
+            "spotify": "https://open.spotify.com/artist/3SozjO3Lat463tQICI9LcE"
+          },
+          "href": "https://api.spotify.com/v1/artists/3SozjO3Lat463tQICI9LcE",
+          "id": "3SozjO3Lat463tQICI9LcE",
+          "name": "Tyla",
+          "type": "artist",
+          "uri": "spotify:artist:3SozjO3Lat463tQICI9LcE"
+        }
+      ],
+      "external_urls": {
+        "spotify": "https://open.spotify.com/album/3KGVOGmIbinlrR97aFufGE"
+      },
+      "href": "https://api.spotify.com/v1/albums/3KGVOGmIbinlrR97aFufGE",
+      "id": "3KGVOGmIbinlrR97aFufGE",
+      "images": [
+        {
+          "height": 640,
+          "url": "https://i.scdn.co/image/ab67616d0000b2733b4e7b8d3e6d063692406021",
+          "width": 640
+        },
+        {
+          "height": 300,
+          "url": "https://i.scdn.co/image/ab67616d00001e023b4e7b8d3e6d063692406021",
+          "width": 300
+        },
+        {
+          "height": 64,
+          "url": "https://i.scdn.co/image/ab67616d000048513b4e7b8d3e6d063692406021",
+          "width": 64
+        }
+      ],
+      "is_playable": true,
+      "name": "TYLA",
+      "release_date": "2024-03-22",
+      "release_date_precision": "day",
+      "total_tracks": 14,
+      "type": "album",
+      "uri": "spotify:album:3KGVOGmIbinlrR97aFufGE"
+    },
+    "artists": [
+      {
+        "external_urls": {
+          "spotify": "https://open.spotify.com/artist/3SozjO3Lat463tQICI9LcE"
+        },
+        "href": "https://api.spotify.com/v1/artists/3SozjO3Lat463tQICI9LcE",
+        "id": "3SozjO3Lat463tQICI9LcE",
+        "name": "Tyla",
+        "type": "artist",
+        "uri": "spotify:artist:3SozjO3Lat463tQICI9LcE"
+      },
+      {
+        "external_urls": {
+          "spotify": "https://open.spotify.com/artist/2hlmm7s2ICUX0LVIhVFlZQ"
+        },
+        "href": "https://api.spotify.com/v1/artists/2hlmm7s2ICUX0LVIhVFlZQ",
+        "id": "2hlmm7s2ICUX0LVIhVFlZQ",
+        "name": "Gunna",
+        "type": "artist",
+        "uri": "spotify:artist:2hlmm7s2ICUX0LVIhVFlZQ"
+      },
+      {
+        "external_urls": {
+          "spotify": "https://open.spotify.com/artist/5FkUhnHQ0KC63549LHHtst"
+        },
+        "href": "https://api.spotify.com/v1/artists/5FkUhnHQ0KC63549LHHtst",
+        "id": "5FkUhnHQ0KC63549LHHtst",
+        "name": "Skillibeng",
+        "type": "artist",
+        "uri": "spotify:artist:5FkUhnHQ0KC63549LHHtst"
+      }
+    ],
+    "disc_number": 1,
+    "duration_ms": 147071,
+    "explicit": false,
+    "external_ids": {
+      "isrc": "USSM12308661"
+    },
+    "external_urls": {
+      "spotify": "https://open.spotify.com/track/6XpEm7VJ7TZxZTawH8BCSW"
+    },
+    "href": "https://api.spotify.com/v1/tracks/6XpEm7VJ7TZxZTawH8BCSW",
+    "id": "6XpEm7VJ7TZxZTawH8BCSW",
+    "is_local": false,
+    "is_playable": true,
+    "name": "Jump",
+    "track_number": 9,
+    "type": "track",
+    "uri": "spotify:track:6XpEm7VJ7TZxZTawH8BCSW"
+  },
+  {
+    "album": {
+      "album_type": "album",
+      "artists": [
+        {
+          "external_urls": {
+            "spotify": "https://open.spotify.com/artist/4J3wzDMI97AlGimdiVcaLb"
+          },
+          "href": "https://api.spotify.com/v1/artists/4J3wzDMI97AlGimdiVcaLb",
+          "id": "4J3wzDMI97AlGimdiVcaLb",
+          "name": "Crazy Frog",
+          "type": "artist",
+          "uri": "spotify:artist:4J3wzDMI97AlGimdiVcaLb"
+        }
+      ],
+      "external_urls": {
+        "spotify": "https://open.spotify.com/album/6dhqlbbOqTKD5xbN3iRqlY"
+      },
+      "href": "https://api.spotify.com/v1/albums/6dhqlbbOqTKD5xbN3iRqlY",
+      "id": "6dhqlbbOqTKD5xbN3iRqlY",
+      "images": [
+        {
+          "height": 640,
+          "url": "https://i.scdn.co/image/ab67616d0000b273d283768954643034b25fde78",
+          "width": 640
+        },
+        {
+          "height": 300,
+          "url": "https://i.scdn.co/image/ab67616d00001e02d283768954643034b25fde78",
+          "width": 300
+        },
+        {
+          "height": 64,
+          "url": "https://i.scdn.co/image/ab67616d00004851d283768954643034b25fde78",
+          "width": 64
+        }
+      ],
+      "is_playable": true,
+      "name": "Crazy Frog presents Crazy Hits",
+      "release_date": "2005-08-01",
+      "release_date_precision": "day",
+      "total_tracks": 16,
+      "type": "album",
+      "uri": "spotify:album:6dhqlbbOqTKD5xbN3iRqlY"
+    },
+    "artists": [
+      {
+        "external_urls": {
+          "spotify": "https://open.spotify.com/artist/4J3wzDMI97AlGimdiVcaLb"
+        },
+        "href": "https://api.spotify.com/v1/artists/4J3wzDMI97AlGimdiVcaLb",
+        "id": "4J3wzDMI97AlGimdiVcaLb",
+        "name": "Crazy Frog",
+        "type": "artist",
+        "uri": "spotify:artist:4J3wzDMI97AlGimdiVcaLb"
+      }
+    ],
+    "disc_number": 1,
+    "duration_ms": 171739,
+    "explicit": false,
+    "external_ids": {
+      "isrc": "DES310500134"
+    },
+    "external_urls": {
+      "spotify": "https://open.spotify.com/track/0Bo5fjMtTfCD8vHGebivqc"
+    },
+    "href": "https://api.spotify.com/v1/tracks/0Bo5fjMtTfCD8vHGebivqc",
+    "id": "0Bo5fjMtTfCD8vHGebivqc",
+    "is_local": false,
+    "is_playable": true,
+    "name": "Axel F",
+    "track_number": 2,
+    "type": "track",
+    "uri": "spotify:track:0Bo5fjMtTfCD8vHGebivqc"
+  },
+  {
+    "album": {
+      "album_type": "album",
+      "artists": [
+        {
+          "external_urls": {
+            "spotify": "https://open.spotify.com/artist/3l0CmX0FuQjFxr8SK7Vqag"
+          },
+          "href": "https://api.spotify.com/v1/artists/3l0CmX0FuQjFxr8SK7Vqag",
+          "id": "3l0CmX0FuQjFxr8SK7Vqag",
+          "name": "Clairo",
+          "type": "artist",
+          "uri": "spotify:artist:3l0CmX0FuQjFxr8SK7Vqag"
+        }
+      ],
+      "external_urls": {
+        "spotify": "https://open.spotify.com/album/1KNUCVXgIxKUGiuEB8eG0i"
+      },
+      "href": "https://api.spotify.com/v1/albums/1KNUCVXgIxKUGiuEB8eG0i",
+      "id": "1KNUCVXgIxKUGiuEB8eG0i",
+      "images": [
+        {
+          "height": 640,
+          "url": "https://i.scdn.co/image/ab67616d0000b273193c2fafdce8f116b5ca0a78",
+          "width": 640
+        },
+        {
+          "height": 300,
+          "url": "https://i.scdn.co/image/ab67616d00001e02193c2fafdce8f116b5ca0a78",
+          "width": 300
+        },
+        {
+          "height": 64,
+          "url": "https://i.scdn.co/image/ab67616d00004851193c2fafdce8f116b5ca0a78",
+          "width": 64
+        }
+      ],
+      "is_playable": true,
+      "name": "Charm",
+      "release_date": "2024-07-12",
+      "release_date_precision": "day",
+      "total_tracks": 11,
+      "type": "album",
+      "uri": "spotify:album:1KNUCVXgIxKUGiuEB8eG0i"
+    },
+    "artists": [
+      {
+        "external_urls": {
+          "spotify": "https://open.spotify.com/artist/3l0CmX0FuQjFxr8SK7Vqag"
+        },
+        "href": "https://api.spotify.com/v1/artists/3l0CmX0FuQjFxr8SK7Vqag",
+        "id": "3l0CmX0FuQjFxr8SK7Vqag",
+        "name": "Clairo",
+        "type": "artist",
+        "uri": "spotify:artist:3l0CmX0FuQjFxr8SK7Vqag"
+      }
+    ],
+    "disc_number": 1,
+    "duration_ms": 207795,
+    "explicit": false,
+    "external_ids": {
+      "isrc": "USA2P2416224"
+    },
+    "external_urls": {
+      "spotify": "https://open.spotify.com/track/3awweDjWIuXNMogMClJnvE"
+    },
+    "href": "https://api.spotify.com/v1/tracks/3awweDjWIuXNMogMClJnvE",
+    "id": "3awweDjWIuXNMogMClJnvE",
+    "is_local": false,
+    "is_playable": true,
+    "name": "Sexy to Someone",
+    "track_number": 2,
+    "type": "track",
+    "uri": "spotify:track:3awweDjWIuXNMogMClJnvE"
+  },
+  {
+    "album": {
+      "album_type": "album",
+      "artists": [
+        {
+          "external_urls": {
+            "spotify": "https://open.spotify.com/artist/6qqNVTkY8uBg9cP3Jd7DAH"
+          },
+          "href": "https://api.spotify.com/v1/artists/6qqNVTkY8uBg9cP3Jd7DAH",
+          "id": "6qqNVTkY8uBg9cP3Jd7DAH",
+          "name": "Billie Eilish",
+          "type": "artist",
+          "uri": "spotify:artist:6qqNVTkY8uBg9cP3Jd7DAH"
+        }
+      ],
+      "external_urls": {
+        "spotify": "https://open.spotify.com/album/7aJuG4TFXa2hmE4z1yxc3n"
+      },
+      "href": "https://api.spotify.com/v1/albums/7aJuG4TFXa2hmE4z1yxc3n",
+      "id": "7aJuG4TFXa2hmE4z1yxc3n",
+      "images": [
+        {
+          "height": 640,
+          "url": "https://i.scdn.co/image/ab67616d0000b27371d62ea7ea8a5be92d3c1f62",
+          "width": 640
+        },
+        {
+          "height": 300,
+          "url": "https://i.scdn.co/image/ab67616d00001e0271d62ea7ea8a5be92d3c1f62",
+          "width": 300
+        },
+        {
+          "height": 64,
+          "url": "https://i.scdn.co/image/ab67616d0000485171d62ea7ea8a5be92d3c1f62",
+          "width": 64
+        }
+      ],
+      "is_playable": true,
+      "name": "HIT ME HARD AND SOFT",
+      "release_date": "2024-05-17",
+      "release_date_precision": "day",
+      "total_tracks": 10,
+      "type": "album",
+      "uri": "spotify:album:7aJuG4TFXa2hmE4z1yxc3n"
+    },
+    "artists": [
+      {
+        "external_urls": {
+          "spotify": "https://open.spotify.com/artist/6qqNVTkY8uBg9cP3Jd7DAH"
+        },
+        "href": "https://api.spotify.com/v1/artists/6qqNVTkY8uBg9cP3Jd7DAH",
+        "id": "6qqNVTkY8uBg9cP3Jd7DAH",
+        "name": "Billie Eilish",
+        "type": "artist",
+        "uri": "spotify:artist:6qqNVTkY8uBg9cP3Jd7DAH"
+      }
+    ],
+    "disc_number": 1,
+    "duration_ms": 293840,
+    "explicit": false,
+    "external_ids": {
+      "isrc": "USUM72401992"
+    },
+    "external_urls": {
+      "spotify": "https://open.spotify.com/track/6TGd66r0nlPaYm3KIoI7ET"
+    },
+    "href": "https://api.spotify.com/v1/tracks/6TGd66r0nlPaYm3KIoI7ET",
+    "id": "6TGd66r0nlPaYm3KIoI7ET",
+    "is_local": false,
+    "is_playable": true,
+    "name": "THE GREATEST",
+    "track_number": 6,
+    "type": "track",
+    "uri": "spotify:track:6TGd66r0nlPaYm3KIoI7ET"
+  },
+  {
+    "album": {
+      "album_type": "album",
+      "artists": [
+        {
+          "external_urls": {
+            "spotify": "https://open.spotify.com/artist/2sSGPbdZJkaSE2AbcGOACx"
+          },
+          "href": "https://api.spotify.com/v1/artists/2sSGPbdZJkaSE2AbcGOACx",
+          "id": "2sSGPbdZJkaSE2AbcGOACx",
+          "name": "The Marías",
+          "type": "artist",
+          "uri": "spotify:artist:2sSGPbdZJkaSE2AbcGOACx"
+        }
+      ],
+      "external_urls": {
+        "spotify": "https://open.spotify.com/album/03guxdOi12XJbnvxvxbpwG"
+      },
+      "href": "https://api.spotify.com/v1/albums/03guxdOi12XJbnvxvxbpwG",
+      "id": "03guxdOi12XJbnvxvxbpwG",
+      "images": [
+        {
+          "height": 640,
+          "url": "https://i.scdn.co/image/ab67616d0000b2738aa339341a0b0c813909c831",
+          "width": 640
+        },
+        {
+          "height": 300,
+          "url": "https://i.scdn.co/image/ab67616d00001e028aa339341a0b0c813909c831",
+          "width": 300
+        },
+        {
+          "height": 64,
+          "url": "https://i.scdn.co/image/ab67616d000048518aa339341a0b0c813909c831",
+          "width": 64
+        }
+      ],
+      "is_playable": true,
+      "name": "Submarine",
+      "release_date": "2024-05-31",
+      "release_date_precision": "day",
+      "total_tracks": 14,
+      "type": "album",
+      "uri": "spotify:album:03guxdOi12XJbnvxvxbpwG"
+    },
+    "artists": [
+      {
+        "external_urls": {
+          "spotify": "https://open.spotify.com/artist/2sSGPbdZJkaSE2AbcGOACx"
+        },
+        "href": "https://api.spotify.com/v1/artists/2sSGPbdZJkaSE2AbcGOACx",
+        "id": "2sSGPbdZJkaSE2AbcGOACx",
+        "name": "The Marías",
+        "type": "artist",
+        "uri": "spotify:artist:2sSGPbdZJkaSE2AbcGOACx"
+      }
+    ],
+    "disc_number": 1,
+    "duration_ms": 236906,
+    "explicit": false,
+    "external_ids": {
+      "isrc": "USAT22307579"
+    },
+    "external_urls": {
+      "spotify": "https://open.spotify.com/track/3siwsiaEoU4Kuuc9WKMUy5"
+    },
+    "href": "https://api.spotify.com/v1/tracks/3siwsiaEoU4Kuuc9WKMUy5",
+    "id": "3siwsiaEoU4Kuuc9WKMUy5",
+    "is_local": false,
+    "is_playable": true,
+    "name": "No One Noticed",
+    "track_number": 11,
+    "type": "track",
+    "uri": "spotify:track:3siwsiaEoU4Kuuc9WKMUy5"
+  },
+  {
+    "album": {
+      "album_type": "album",
+      "artists": [
+        {
+          "external_urls": {
+            "spotify": "https://open.spotify.com/artist/6qqNVTkY8uBg9cP3Jd7DAH"
+          },
+          "href": "https://api.spotify.com/v1/artists/6qqNVTkY8uBg9cP3Jd7DAH",
+          "id": "6qqNVTkY8uBg9cP3Jd7DAH",
+          "name": "Billie Eilish",
+          "type": "artist",
+          "uri": "spotify:artist:6qqNVTkY8uBg9cP3Jd7DAH"
+        }
+      ],
+      "external_urls": {
+        "spotify": "https://open.spotify.com/album/7aJuG4TFXa2hmE4z1yxc3n"
+      },
+      "href": "https://api.spotify.com/v1/albums/7aJuG4TFXa2hmE4z1yxc3n",
+      "id": "7aJuG4TFXa2hmE4z1yxc3n",
+      "images": [
+        {
+          "height": 640,
+          "url": "https://i.scdn.co/image/ab67616d0000b27371d62ea7ea8a5be92d3c1f62",
+          "width": 640
+        },
+        {
+          "height": 300,
+          "url": "https://i.scdn.co/image/ab67616d00001e0271d62ea7ea8a5be92d3c1f62",
+          "width": 300
+        },
+        {
+          "height": 64,
+          "url": "https://i.scdn.co/image/ab67616d0000485171d62ea7ea8a5be92d3c1f62",
+          "width": 64
+        }
+      ],
+      "is_playable": true,
+      "name": "HIT ME HARD AND SOFT",
+      "release_date": "2024-05-17",
+      "release_date_precision": "day",
+      "total_tracks": 10,
+      "type": "album",
+      "uri": "spotify:album:7aJuG4TFXa2hmE4z1yxc3n"
+    },
+    "artists": [
+      {
+        "external_urls": {
+          "spotify": "https://open.spotify.com/artist/6qqNVTkY8uBg9cP3Jd7DAH"
+        },
+        "href": "https://api.spotify.com/v1/artists/6qqNVTkY8uBg9cP3Jd7DAH",
+        "id": "6qqNVTkY8uBg9cP3Jd7DAH",
+        "name": "Billie Eilish",
+        "type": "artist",
+        "uri": "spotify:artist:6qqNVTkY8uBg9cP3Jd7DAH"
+      }
+    ],
+    "disc_number": 1,
+    "duration_ms": 179586,
+    "explicit": false,
+    "external_ids": {
+      "isrc": "USUM72401991"
+    },
+    "external_urls": {
+      "spotify": "https://open.spotify.com/track/629DixmZGHc7ILtEntuiWE"
+    },
+    "href": "https://api.spotify.com/v1/tracks/629DixmZGHc7ILtEntuiWE",
+    "id": "629DixmZGHc7ILtEntuiWE",
+    "is_local": false,
+    "is_playable": true,
+    "name": "LUNCH",
+    "track_number": 2,
+    "type": "track",
+    "uri": "spotify:track:629DixmZGHc7ILtEntuiWE"
+  },
+  {
+    "album": {
+      "album_type": "album",
+      "artists": [
+        {
+          "external_urls": {
+            "spotify": "https://open.spotify.com/artist/7mv15aFhJmcqNEGeiYWWbt"
+          },
+          "href": "https://api.spotify.com/v1/artists/7mv15aFhJmcqNEGeiYWWbt",
+          "id": "7mv15aFhJmcqNEGeiYWWbt",
+          "name": "Fabienne DelSol",
+          "type": "artist",
+          "uri": "spotify:artist:7mv15aFhJmcqNEGeiYWWbt"
+        }
+      ],
+      "external_urls": {
+        "spotify": "https://open.spotify.com/album/69CeT4lno5kzyf0dmSCuvx"
+      },
+      "href": "https://api.spotify.com/v1/albums/69CeT4lno5kzyf0dmSCuvx",
+      "id": "69CeT4lno5kzyf0dmSCuvx",
+      "images": [
+        {
+          "height": 640,
+          "url": "https://i.scdn.co/image/ab67616d0000b273558927b2396207b868bfeb07",
+          "width": 640
+        },
+        {
+          "height": 300,
+          "url": "https://i.scdn.co/image/ab67616d00001e02558927b2396207b868bfeb07",
+          "width": 300
+        },
+        {
+          "height": 64,
+          "url": "https://i.scdn.co/image/ab67616d00004851558927b2396207b868bfeb07",
+          "width": 64
+        }
+      ],
+      "is_playable": true,
+      "name": "No Time for Sorrows",
+      "release_date": "2004-10-25",
+      "release_date_precision": "day",
+      "total_tracks": 13,
+      "type": "album",
+      "uri": "spotify:album:69CeT4lno5kzyf0dmSCuvx"
+    },
+    "artists": [
+      {
+        "external_urls": {
+          "spotify": "https://open.spotify.com/artist/7mv15aFhJmcqNEGeiYWWbt"
+        },
+        "href": "https://api.spotify.com/v1/artists/7mv15aFhJmcqNEGeiYWWbt",
+        "id": "7mv15aFhJmcqNEGeiYWWbt",
+        "name": "Fabienne DelSol",
+        "type": "artist",
+        "uri": "spotify:artist:7mv15aFhJmcqNEGeiYWWbt"
+      }
+    ],
+    "disc_number": 1,
+    "duration_ms": 133946,
+    "explicit": false,
+    "external_ids": {
+      "isrc": "GBGLR0300044"
+    },
+    "external_urls": {
+      "spotify": "https://open.spotify.com/track/1kvwk7VlnmVsFeI6SlZhzC"
+    },
+    "href": "https://api.spotify.com/v1/tracks/1kvwk7VlnmVsFeI6SlZhzC",
+    "id": "1kvwk7VlnmVsFeI6SlZhzC",
+    "is_local": false,
+    "is_playable": true,
+    "name": "Laisse tomber les filles",
+    "track_number": 3,
+    "type": "track",
+    "uri": "spotify:track:1kvwk7VlnmVsFeI6SlZhzC"
+  },
+  {
+    "album": {
+      "album_type": "album",
+      "artists": [
+        {
+          "external_urls": {
+            "spotify": "https://open.spotify.com/artist/0Y5tJX1MQlPlqiwlOH1tJY"
+          },
+          "href": "https://api.spotify.com/v1/artists/0Y5tJX1MQlPlqiwlOH1tJY",
+          "id": "0Y5tJX1MQlPlqiwlOH1tJY",
+          "name": "Travis Scott",
+          "type": "artist",
+          "uri": "spotify:artist:0Y5tJX1MQlPlqiwlOH1tJY"
+        }
+      ],
+      "external_urls": {
+        "spotify": "https://open.spotify.com/album/18NOKLkZETa4sWwLMIm0UZ"
+      },
+      "href": "https://api.spotify.com/v1/albums/18NOKLkZETa4sWwLMIm0UZ",
+      "id": "18NOKLkZETa4sWwLMIm0UZ",
+      "images": [
+        {
+          "height": 640,
+          "url": "https://i.scdn.co/image/ab67616d0000b27304481c826dd292e5e4983b3f",
+          "width": 640
+        },
+        {
+          "height": 300,
+          "url": "https://i.scdn.co/image/ab67616d00001e0204481c826dd292e5e4983b3f",
+          "width": 300
+        },
+        {
+          "height": 64,
+          "url": "https://i.scdn.co/image/ab67616d0000485104481c826dd292e5e4983b3f",
+          "width": 64
+        }
+      ],
+      "is_playable": true,
+      "name": "UTOPIA",
+      "release_date": "2023-07-28",
+      "release_date_precision": "day",
+      "total_tracks": 19,
+      "type": "album",
+      "uri": "spotify:album:18NOKLkZETa4sWwLMIm0UZ"
+    },
+    "artists": [
+      {
+        "external_urls": {
+          "spotify": "https://open.spotify.com/artist/0Y5tJX1MQlPlqiwlOH1tJY"
+        },
+        "href": "https://api.spotify.com/v1/artists/0Y5tJX1MQlPlqiwlOH1tJY",
+        "id": "0Y5tJX1MQlPlqiwlOH1tJY",
+        "name": "Travis Scott",
+        "type": "artist",
+        "uri": "spotify:artist:0Y5tJX1MQlPlqiwlOH1tJY"
+      },
+      {
+        "external_urls": {
+          "spotify": "https://open.spotify.com/artist/699OTQXzgjhIYAHMy9RyPD"
+        },
+        "href": "https://api.spotify.com/v1/artists/699OTQXzgjhIYAHMy9RyPD",
+        "id": "699OTQXzgjhIYAHMy9RyPD",
+        "name": "Playboi Carti",
+        "type": "artist",
+        "uri": "spotify:artist:699OTQXzgjhIYAHMy9RyPD"
+      }
+    ],
+    "disc_number": 1,
+    "duration_ms": 191700,
+    "explicit": true,
+    "external_ids": {
+      "isrc": "USSM12305010"
+    },
+    "external_urls": {
+      "spotify": "https://open.spotify.com/track/42VsgItocQwOQC3XWZ8JNA"
+    },
+    "href": "https://api.spotify.com/v1/tracks/42VsgItocQwOQC3XWZ8JNA",
+    "id": "42VsgItocQwOQC3XWZ8JNA",
+    "is_local": false,
+    "is_playable": true,
+    "name": "FE!N (feat. Playboi Carti)",
+    "track_number": 8,
+    "type": "track",
+    "uri": "spotify:track:42VsgItocQwOQC3XWZ8JNA"
+  },
+  {
+    "album": {
+      "album_type": "album",
+      "artists": [
+        {
+          "external_urls": {
+            "spotify": "https://open.spotify.com/artist/0iEtIxbK0KxaSlF7G42ZOp"
+          },
+          "href": "https://api.spotify.com/v1/artists/0iEtIxbK0KxaSlF7G42ZOp",
+          "id": "0iEtIxbK0KxaSlF7G42ZOp",
+          "name": "Metro Boomin",
+          "type": "artist",
+          "uri": "spotify:artist:0iEtIxbK0KxaSlF7G42ZOp"
+        }
+      ],
+      "external_urls": {
+        "spotify": "https://open.spotify.com/album/7txGsnDSqVMoRl6RQ9XyZP"
+      },
+      "href": "https://api.spotify.com/v1/albums/7txGsnDSqVMoRl6RQ9XyZP",
+      "id": "7txGsnDSqVMoRl6RQ9XyZP",
+      "images": [
+        {
+          "height": 640,
+          "url": "https://i.scdn.co/image/ab67616d0000b273c4fee55d7b51479627c31f89",
+          "width": 640
+        },
+        {
+          "height": 300,
+          "url": "https://i.scdn.co/image/ab67616d00001e02c4fee55d7b51479627c31f89",
+          "width": 300
+        },
+        {
+          "height": 64,
+          "url": "https://i.scdn.co/image/ab67616d00004851c4fee55d7b51479627c31f89",
+          "width": 64
+        }
+      ],
+      "is_playable": true,
+      "name": "HEROES & VILLAINS",
+      "release_date": "2022-12-02",
+      "release_date_precision": "day",
+      "total_tracks": 15,
+      "type": "album",
+      "uri": "spotify:album:7txGsnDSqVMoRl6RQ9XyZP"
+    },
+    "artists": [
+      {
+        "external_urls": {
+          "spotify": "https://open.spotify.com/artist/0iEtIxbK0KxaSlF7G42ZOp"
+        },
+        "href": "https://api.spotify.com/v1/artists/0iEtIxbK0KxaSlF7G42ZOp",
+        "id": "0iEtIxbK0KxaSlF7G42ZOp",
+        "name": "Metro Boomin",
+        "type": "artist",
+        "uri": "spotify:artist:0iEtIxbK0KxaSlF7G42ZOp"
+      },
+      {
+        "external_urls": {
+          "spotify": "https://open.spotify.com/artist/0Y5tJX1MQlPlqiwlOH1tJY"
+        },
+        "href": "https://api.spotify.com/v1/artists/0Y5tJX1MQlPlqiwlOH1tJY",
+        "id": "0Y5tJX1MQlPlqiwlOH1tJY",
+        "name": "Travis Scott",
+        "type": "artist",
+        "uri": "spotify:artist:0Y5tJX1MQlPlqiwlOH1tJY"
+      },
+      {
+        "external_urls": {
+          "spotify": "https://open.spotify.com/artist/50co4Is1HCEo8bhOyUWKpn"
+        },
+        "href": "https://api.spotify.com/v1/artists/50co4Is1HCEo8bhOyUWKpn",
+        "id": "50co4Is1HCEo8bhOyUWKpn",
+        "name": "Young Thug",
+        "type": "artist",
+        "uri": "spotify:artist:50co4Is1HCEo8bhOyUWKpn"
+      }
+    ],
+    "disc_number": 1,
+    "duration_ms": 194786,
+    "explicit": true,
+    "external_ids": {
+      "isrc": "USUG12208787"
+    },
+    "external_urls": {
+      "spotify": "https://open.spotify.com/track/5wG3HvLhF6Y5KTGlK0IW3J"
+    },
+    "href": "https://api.spotify.com/v1/tracks/5wG3HvLhF6Y5KTGlK0IW3J",
+    "id": "5wG3HvLhF6Y5KTGlK0IW3J",
+    "is_local": false,
+    "is_playable": true,
+    "name": "Trance (with Travis Scott & Young Thug)",
+    "track_number": 6,
+    "type": "track",
+    "uri": "spotify:track:5wG3HvLhF6Y5KTGlK0IW3J"
+  },
+  {
+    "album": {
+      "album_type": "album",
+      "artists": [
+        {
+          "external_urls": {
+            "spotify": "https://open.spotify.com/artist/3TVXtAsR1Inumwj472S9r4"
+          },
+          "href": "https://api.spotify.com/v1/artists/3TVXtAsR1Inumwj472S9r4",
+          "id": "3TVXtAsR1Inumwj472S9r4",
+          "name": "Drake",
+          "type": "artist",
+          "uri": "spotify:artist:3TVXtAsR1Inumwj472S9r4"
+        }
+      ],
+      "external_urls": {
+        "spotify": "https://open.spotify.com/album/1lXY618HWkwYKJWBRYR4MK"
+      },
+      "href": "https://api.spotify.com/v1/albums/1lXY618HWkwYKJWBRYR4MK",
+      "id": "1lXY618HWkwYKJWBRYR4MK",
+      "images": [
+        {
+          "height": 640,
+          "url": "https://i.scdn.co/image/ab67616d0000b2734f0fd9dad63977146e685700",
+          "width": 640
+        },
+        {
+          "height": 300,
+          "url": "https://i.scdn.co/image/ab67616d00001e024f0fd9dad63977146e685700",
+          "width": 300
+        },
+        {
+          "height": 64,
+          "url": "https://i.scdn.co/image/ab67616d000048514f0fd9dad63977146e685700",
+          "width": 64
+        }
+      ],
+      "is_playable": true,
+      "name": "More Life",
+      "release_date": "2017-03-18",
+      "release_date_precision": "day",
+      "total_tracks": 22,
+      "type": "album",
+      "uri": "spotify:album:1lXY618HWkwYKJWBRYR4MK"
+    },
+    "artists": [
+      {
+        "external_urls": {
+          "spotify": "https://open.spotify.com/artist/3TVXtAsR1Inumwj472S9r4"
+        },
+        "href": "https://api.spotify.com/v1/artists/3TVXtAsR1Inumwj472S9r4",
+        "id": "3TVXtAsR1Inumwj472S9r4",
+        "name": "Drake",
+        "type": "artist",
+        "uri": "spotify:artist:3TVXtAsR1Inumwj472S9r4"
+      }
+    ],
+    "disc_number": 1,
+    "duration_ms": 210937,
+    "explicit": true,
+    "external_ids": {
+      "isrc": "USCM51700084"
+    },
+    "external_urls": {
+      "spotify": "https://open.spotify.com/track/343YBumqHu19cGoGARUTsd"
+    },
+    "href": "https://api.spotify.com/v1/tracks/343YBumqHu19cGoGARUTsd",
+    "id": "343YBumqHu19cGoGARUTsd",
+    "is_local": false,
+    "is_playable": true,
+    "name": "Fake Love",
+    "track_number": 20,
+    "type": "track",
+    "uri": "spotify:track:343YBumqHu19cGoGARUTsd"
+  }
+]

@@ -1,9 +1,19 @@
 import { useState, useEffect } from "preact/hooks";
 import type { ComponentChildren } from "preact";
-import ieIcon from "./assets/internet_explorer.png";
-import folderIcon from "./assets/open folder.png";
-import notepadIcon from "./assets/notepad.png";
-import contact from "./assets/card.png";
+
+import ieIcon from "./assets/desktop/System Information.png";
+import folderIcon from "./assets/desktop/My Documents.png";
+import notepadIcon from "./assets/desktop/Generic Text Document.png";
+import contact from "./assets/desktop/Search for people.png";
+import music from "./assets/desktop/My Music.png";
+import games from "./assets/desktop/Game Controller.png";
+
+import bg3 from "./assets/games/bg3.jpg";
+import stardewValley from "./assets/games/stardewValley.png";
+import cs2 from "./assets/games/Cs2.jpg";
+import eldenRing from "./assets/games/eldenRing.jpg";
+import balatro from "./assets/games/balatro.jpg";
+
 import { DraggableIcon } from "./draggable";
 import "./app.css";
 
@@ -70,7 +80,7 @@ type WindowProps = {
 
 function XPWindow({ title, children, onClose, onFocus, zIndex }: WindowProps) {
   const [pos, setPos] = useState({ x: 180, y: 100 });
-  const [size, setSize] = useState({ w: 520, h: 340 });
+  const [size, setSize] = useState({ w: 520, h: 520 });
   const [dragging, setDragging] = useState(false);
   const [resizing, setResizing] = useState(false);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
@@ -152,7 +162,9 @@ export function App() {
     { id: "folder", img: folderIcon, label: "projects", x: 0, y: 0 },
     { id: "about", img: ieIcon, label: "about me", x: 0, y: 0 },
     { id: "notepad", img: notepadIcon, label: "resume", x: 0, y: 0 },
-    { id: "contact", img: contact, label: "contact", x: 0, y: 0 },
+    { id: "contact", img: contact, label: "contact info", x: 0, y: 0 },
+    { id: "games", img: games, label: "games", x: 0, y: 0 }, 
+    { id: "music", img: music, label: "music", x: 0, y: 0}
   ]);
 
   useEffect(() => {
@@ -161,19 +173,17 @@ export function App() {
   }, []);
 
   useEffect(() => {
-    const desktop = document.querySelector(".desktop") as HTMLDivElement;
-    if (!desktop) return;
-
-    const rect = desktop.getBoundingClientRect();
+    const maxX = window.innerWidth - ICON_W;
+    const maxY = window.innerHeight - TASKBAR_H - ICON_H;
     const occupied: Array<[number, number]> = [];
 
     setIcons((prev) =>
       prev.map((icon) => {
         const [x, y] = getRandomGridPosition(
           0,
-          rect.width - ICON_W,
+          maxX,
           0,
-          rect.height - ICON_H - TASKBAR_H,
+          maxY,
           occupied
         );
         occupied.push([x, y]);
@@ -183,14 +193,14 @@ export function App() {
   }, []);
 
   function moveIcon(id: string, rawX: number, rawY: number) {
-    const desktop = document.querySelector(".desktop") as HTMLDivElement;
-    const rect = desktop.getBoundingClientRect();
+    const maxX = window.innerWidth - ICON_W;
+    const maxY = window.innerHeight - TASKBAR_H - ICON_H;
 
     let nextX = snap(rawX, GRID_X);
     let nextY = snap(rawY, GRID_Y);
 
-    nextX = clamp(nextX, 0, rect.width - ICON_W);
-    nextY = clamp(nextY, 0, rect.height - ICON_H - TASKBAR_H);
+    nextX = clamp(nextX, 0, maxX);
+    nextY = clamp(nextY, 0, maxY);
 
     const occupied = icons.some(
       (icon) => icon.id !== id && icon.x === nextX && icon.y === nextY
@@ -360,11 +370,21 @@ export function App() {
     if (id === "about") {
       return (
         <>
-          <h2>About Me</h2>
+          <h2>Hi, I'm Rakshaa!</h2>
           <h3>Welcome to my desktop!</h3>
           <p>
-            I’m Rakshaa, a BBA + Computer Science student passionate about building useful, creative, and data-driven tools. My experience spans cloud FinOps, audit, and software development, including work on budgeting platforms, AI chatbots, and cost-optimization projects. I like combining business thinking with technical problem-solving to make systems cleaner, smarter, and easier to use.
-            
+            I’m a BBA + Computer Science student passionate about building useful, creative, and data-driven tools. My experience spans cloud FinOps, audit, and software development, including work on budgeting platforms, AI chatbots, and cost-optimization projects. I like combining business thinking with technical problem-solving to make systems cleaner, smarter, and easier to use.
+          </p>
+          <p>
+            Outside of school & work I have a variety of hobbies and interests. 
+            One of my big ones is playing video games, which is what inspired me to pursue computer science in the first place! 
+            Some of my favourite games include Baulders Gate 3, Pokemon Pokopia, Counter Strike and Elden Ring. 
+            Additionally, I love music (consistently get over 100,000 hours on spotify every year lol) and play the piano, guitar, saxophone(alto, tenor & soprano) and trombone. 
+            Due to my love for music, I was part of a Jazz Band, Vocal Jazz Band, Senior Wind Ensemble & Choir throughout high school. 
+            I'm also currently learning how to garden & started as a Dungeon Master for my friends which has been a fun yet tough learning experience so far! 
+          </p>
+          <p>
+            This portfolio is a playful way to share my projects and experience. Feel free to explore the icons, open the windows, and check out my resume and contact info. I’m always excited to connect with new people, so don’t hesitate to reach out!
           </p>
           <button class="xp-button" onClick={() => openWindow("contact")}> 
             Contact Me
@@ -499,6 +519,130 @@ export function App() {
       );
     }
 
+    if (id === "music") {
+      interface MySong {
+        title: string;
+        artist: string;
+        album: string;
+        cover: string;
+      }
+      
+      const [songs, setSongs] = useState<MySong[]>([]);
+      
+      useEffect(() => {
+        fetch('topTracks.json')
+          .then((response) => {
+            if (!response.ok) {
+              throw new Error('Network response was not ok');
+            }
+            return response.json();
+          })
+          .then((data: any[]) => {
+            // Extract the desired fields from the Spotify API response
+            const extractedSongs: MySong[] = data.map(track => ({
+              title: track.name,
+              artist: track.artists.map((artist: any) => artist.name).join(', '),
+              album: track.album.name,
+              cover: track.album.images[0]?.url || ''
+            }));
+            
+            // Randomly select 5 songs from the 20
+            const shuffled = extractedSongs.sort(() => 0.5 - Math.random());
+            const selectedSongs = shuffled.slice(0, 5);
+            
+            setSongs(selectedSongs);
+          })
+          .catch((error) => {
+            console.error('Error reading JSON file:', error);
+          });
+      }, []);
+      
+      return (
+        <>
+          <h2>What I'm Listening To</h2>
+          <hr/>
+          <p>I listen to a wide variety of music so here are some songs that I have on repeat!</p>
+          <div class="music-list">
+            {songs.map((song, index) => (
+              <div class="music-row" key={index}>
+                <img src={song.cover} class="music-cover" />
+
+                <div class="music-info">
+                  <div class="music-title">{song.title}</div>
+                  <div class="music-subtitle">
+                    {song.artist} · {song.album}
+                  </div>
+                </div>
+
+                <button class="music-more">...</button>
+              </div>
+            ))}
+          </div>
+          
+        </>
+      );
+    }
+
+    if (id === "games") {
+      const games = [
+        {
+          title: "Baulder's Gate 3",
+          hoursPlayed: "650+",
+          achievements: "50/54",
+          cover: bg3,
+        },
+        {
+          title: "Stardew Valley",
+          hoursPlayed: "250+",
+          achievements: "30/49",
+          cover: stardewValley,
+        },
+        {
+          title: "Counter-Strike 2",
+          hoursPlayed: "160+",
+          achievements: "1/1",
+          cover: cs2,
+        },
+        {
+          title: "Elden Ring",
+          hoursPlayed: "160+",
+          achievements: "25/42",
+          cover: eldenRing,
+        },
+        {
+          title: "Balatro",
+          hoursPlayed: "100+",
+          achievements: "27/31",
+          cover: balatro,
+        },
+        
+      ];
+      return (
+        <>
+          <h2>What I'm Playing</h2>
+          <hr/>
+          <p>I play a wide variety of games (but my favourites are RPGs, strategy games, and cozy games!)</p>
+          <div class="music-list">
+            {games.map((games) => (
+              <div class="music-row" key={games.title}>
+                <img src={games.cover} class="music-cover" />
+
+                <div class="music-info">
+                  <div class="music-title">{games.title}</div>
+                  <div class="music-subtitle">
+                    Hours Played: {games.hoursPlayed} · {games.achievements} achievements unlocked
+                  </div>
+                </div>
+
+                <button class="music-more">...</button>
+              </div>
+            ))}
+          </div>
+          
+        </>
+      );
+    }
+
     return <p>Empty window</p>;
   }
 
@@ -561,7 +705,7 @@ export function App() {
           My Portfolio
         </button>
 
-        {icons.map((icon) => (
+        {icons.slice(0, 4).map((icon) => (
           <button
             class="task-button"
             key={icon.id}
