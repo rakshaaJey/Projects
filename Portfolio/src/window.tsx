@@ -6,7 +6,7 @@ type XPWindowProps = {
   onClose: () => void;
 };
 
-function Window({ title, children, onClose }: XPWindowProps) {
+export default function Window({ title, children, onClose }: XPWindowProps) {
   const [pos, setPos] = useState({ x: 180, y: 100 });
   const [size, setSize] = useState({ w: 360, h: 240 });
   const [dragging, setDragging] = useState(false);
