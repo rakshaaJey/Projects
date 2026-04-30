@@ -460,6 +460,38 @@ export function App() {
             <h3>Experience</h3>
               <div class="resume-entry">
                 <div>
+                  <strong>Business Analyst (Co-op)</strong>
+                  <div><i>Royal Bank of Canada</i></div>
+                </div>
+                <div class="resume-year">May 2026 - Aug 2026</div>
+              </div>
+
+              <div class="resume-entry">
+                <div>
+                  <strong>Vice President of Finance, Marketing Executive & Education Lead</strong>
+                  <div><i>University of Waterloo Statistics Club</i></div>
+                </div>
+                <div class="resume-year">May 2024 - Apr 2026</div>
+              </div>
+              <div class="resume-bullets">
+                <ul>
+                  <li>
+                    Developed and managed the club’s semester budget, ensuring resources were allocated effectively across events, projects, and operational needs
+                  </li>
+                  <li>
+                    Coordinated with four sub-teams to deliver multiple projects with competing deadlines, ensuring work was completed within budget, timeline, and scope
+                  </li>
+                  <li>
+                    Designed and implemented a comprehensive marketing strategy that increased club engagement by 1100%
+                  </li>
+                  <li>
+                    Planned and led midterm and final exam study sessions, including creating study materials and teaching course concepts to students
+                  </li>
+                </ul>
+              </div>
+
+              <div class="resume-entry">
+                <div>
                   <strong>Cloud Fin-Ops (Co-op)</strong>
                   <div><i>Magnet Forensics</i></div>
                 </div>
