@@ -1,0 +1,94 @@
+# Rakshaa's Portfolio Website
+
+## Overview
+This is a creative portfolio website for Rakshaa Jeyarajah, a BBA + Computer Science student at Wilfrid Laurier University. The site uses a nostalgic Windows XP-style desktop interface to present professional information in an engaging, interactive way.
+
+## Technical Stack
+- **Frontend**: Preact (React alternative) with TypeScript
+- **Build Tool**: Vite
+- **Styling**: Custom CSS with Windows XP-inspired design
+- **Deployment**: Static site hosting
+
+## Site Structure & Navigation
+
+### Desktop Interface
+The website mimics a Windows XP desktop with:
+- Draggable desktop icons that snap to a grid
+- Windows XP-style windows that can be moved, resized, and closed
+- A taskbar with start button and window management
+- Retro visual effects (scanlines, static)
+
+### Main Sections
+
+#### 1. About Me (System Information icon)
+Personal introduction covering:
+- Academic background: BBA + Computer Science student
+- Professional interests: Cloud FinOps, audit, software development
+- Personal hobbies: Video games (Baldur's Gate 3, Stardew Valley, Counter-Strike 2, Elden Ring, Balatro), music 
+- Musical background: Piano, guitar, saxophone (alto/tenor/soprano), trombone; participated in Jazz Band, Vocal Jazz Band, Senior Wind Ensemble & Choir
+- Other interests: Gardening, Dungeons & Dragons (as DM)
+
+#### 2. Projects (My Documents folder icon)
+Showcases key projects and achievements:
+- **S&P Inclusion Predictor** (Laurier Data Minds 2026 - 2nd Place): ML model predicting S&P 500 additions using financial metrics and NLP sentiment analysis
+- **Deepfake Research** (Map the System 2026 - Finalist): Systems-thinking analysis of AI-powered deepfake exploitation
+- **Cloud Cost Budgeting Platform** (Magnet Forensics): Automated cloud cost forecasting and budgeting tool
+- **Integrated Case Competition** (Semi-Finalist): Consumer behavior analysis in Waterloo Region
+- **Housing Market Predictor** (DataFest Hackathon 2025 - 2nd Place): US commercial real estate market analysis
+
+#### 3. Resume (Notepad icon)
+Professional resume including:
+- **Skills**: Programming (Python, Java, JavaScript, R, C++, C, LaTeX, CSS, TypeScript), Tools (Excel, Word, PowerPoint, Jira, Confluence, Azure DevOps, Tableau, PowerBI, Git), Languages (English & French fluent)
+- **Experience**:
+  - Cloud Fin-Ops Co-op at Magnet Forensics (2025): Saved $300k+ in cloud costs, built budgeting platform
+  - Audit Intern at Norton McMullen (2025): Completed audits for not-for-profit and for-profit organizations
+  - Software Developer Co-op at Connex Telecommunications (2024): AI chatbot development and maintenance
+
+#### 4. Contact Info (Search for People icon)
+Contact information including:
+- Email: rakshaajey@gmail.com
+- LinkedIn: linkedin.com/in/rakshaa-jeyarajah-880427250
+- X/Twitter: @sp4cer0ck
+- GitHub: github.com/rakshaaJey
+
+#### 5. Games (Game Controller icon)
+Current gaming interests with playtime and achievements:
+- Baldur's Gate 3 (650+ hours, 50/54 achievements)
+- Stardew Valley (250+ hours, 30/49 achievements)
+- Counter-Strike 2 (160+ hours, competitive play)
+- Elden Ring (160+ hours, 25/42 achievements)
+- Balatro (100+ hours, 27/31 achievements)
+
+#### 6. Music (My Music icon)
+Dynamic music section that displays 5 randomly selected songs from Rakshaa's top 20 Spotify tracks. Each entry shows:
+- Song title
+- Artist name(s)
+- Album name
+- Album cover artwork
+
+The music data is fetched from Spotify's API and stored locally, with fresh randomization on each page load.
+
+## Interactive Features
+- **Draggable Icons**: Desktop icons can be moved around and snap to a grid
+- **Window Management**: Multiple windows can be open simultaneously with proper z-indexing
+- **Resizable Windows**: Windows can be resized by dragging the bottom-right corner
+- **Taskbar**: Shows open windows and allows quick switching
+- **Help Overlay**: Welcome screen explaining how to use the interface
+
+## Design Philosophy
+The Windows XP aesthetic serves multiple purposes:
+- Creates a nostalgic, approachable atmosphere
+- Demonstrates technical creativity and attention to detail
+- Makes the portfolio memorable and engaging
+- Showcases both frontend development skills and UI/UX design
+
+## Content Strategy
+The site balances professional content with personal interests to give visitors a well-rounded view of Rakshaa as both a developer and individual. The interactive nature encourages exploration and engagement with the content.
+
+## Future Plans (from README)
+Additional sections planned:
+- Travel (countries visited and desired destinations)
+- Collections (Pokemon cards, vinyl records)
+- Miscellaneous facts
+- Blog
+- Currently watching (TV/movies)
