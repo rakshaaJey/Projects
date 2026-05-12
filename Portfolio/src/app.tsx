@@ -351,6 +351,20 @@ export function App() {
             <hr/>
             <div class="resume-entry">
             <div>
+              <h3>VLR API</h3>
+            </div>
+            </div>
+            <div class="resume-bullets">
+              <ul>
+                <li>
+                  Created an unofficial Valorant API for e-sports with easy access to a variety of data surrounding the game, including player stats, match history, kda and more
+                </li>
+              </ul>
+            </div>
+
+            <hr/>
+            <div class="resume-entry">
+            <div>
               <h3>Integrated Case Competition - Semi Finalist</h3>
             </div>
             </div>
@@ -388,6 +402,23 @@ export function App() {
               </ul>
             </div>
             <br/>
+
+            <hr/>
+            <div class="resume-entry">
+            <div>
+              <h3>Scouting App</h3>
+            </div>
+            </div>
+            <div class="resume-bullets">
+              <ul>
+                <li>
+                  Developed a scouting app for my robotics team to easily collect and analyze data on our own and our competitors' robots during competitions
+                </li>
+                <li>
+                  Simple UI & UX allowed for quick and efficient data collection during the fast paced environment of competitions, leading to better strategy decisions and improved robot performance
+                </li>
+              </ul>
+            </div>
         </>
       );
     }
@@ -530,6 +561,40 @@ export function App() {
                   </li>
                 </ul>
               </div>
+
+              <hr/>
+            <div class="resume-entry">
+                <div>
+                  <strong>Programming Lead</strong>
+                  <div><i>Alpha Dogs FIRST Robotics Team</i></div>
+                </div>
+                <div class="resume-year">Sept 2018 - Jun 2022</div>
+              </div>
+            <div class="resume-bullets">
+              <ul>
+                <li>
+                  Utilized strong oral and written communication skills to develop sponsorship presentations and reports to firms such as Canadian Tire and Husky with a 100% success rate in securing funds
+                </li>
+                <li>
+                  Developed, coordinated and managed an outreach program giving students the opportunity to learn basic STEM skills through delivering a lecture for a robotics convention
+                </li>
+                <li>
+                  Worked cross-functionally across teams to ensure that robot programming matched designs
+                </li>
+                <li>
+                  Led programming team meetings to provide project updates, feedback and planned team workflows to ensure a completed robot at the end of the build season
+                </li>
+                <li>
+                  Planned, developed and implemented a comprehensive Java programming training on object-oriented programming and data structures for high school students on the robotics team
+                </li>
+                <li>
+                  Provided strategy decisions for competitions based on the analysis of data for over 200 matches along with solid judgment and intuition
+                </li>
+                <li>
+                  Result-focused, with a drive to produce high quality work shown through the team's consistent placement within the top 20 FIRST Robotics Teams in Canada and three appearances at the FIRST Robotics World Championship
+                </li>
+              </ul>
+            </div>
               <br/>
           </section>
         </>
