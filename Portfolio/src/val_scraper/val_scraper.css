@@ -1,0 +1,671 @@
+:root {
+  --val-red: #ff4655;
+  --val-navy: #0f1923;
+  --val-off-white: #ece8e1;
+  --val-grey: #5a6672;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+}
+
+body {
+  font-family: system-ui, Arial, sans-serif;
+  background: var(--val-navy);
+  color: var(--val-off-white);
+}
+
+.val-scraper {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 48px 16px;
+}
+
+.val-header h1 {
+  margin: 0;
+  font-size: 2.25rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.val-header h1::after {
+  content: "";
+  display: block;
+  width: 56px;
+  height: 4px;
+  margin-top: 12px;
+  background: var(--val-red);
+}
+
+.val-subtitle {
+  margin: 16px 0 0;
+  color: var(--val-grey);
+}
+
+.val-buttons {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+  margin-top: 32px;
+}
+
+.val-button {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 18px 20px;
+  text-align: left;
+  font: inherit;
+  color: var(--val-off-white);
+  background: transparent;
+  border: 2px solid var(--val-grey);
+  cursor: pointer;
+  transition: border-color 120ms ease, background-color 120ms ease, transform 120ms ease;
+}
+
+.val-button:hover {
+  border-color: var(--val-red);
+  transform: translateY(-2px);
+}
+
+.val-button:focus-visible {
+  outline: 2px solid var(--val-red);
+  outline-offset: 3px;
+}
+
+.val-button.is-active {
+  background: var(--val-red);
+  border-color: var(--val-red);
+  color: var(--val-off-white);
+}
+
+.val-button-label {
+  font-weight: 700;
+  font-size: 1.1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.val-button-desc {
+  font-size: 0.9rem;
+  color: var(--val-grey);
+}
+
+.val-button.is-active .val-button-desc {
+  color: var(--val-off-white);
+  opacity: 0.85;
+}
+
+.val-panel {
+  margin-top: 32px;
+  padding: 24px;
+  border: 1px solid var(--val-grey);
+  border-left: 4px solid var(--val-red);
+}
+
+.val-panel h2 {
+  margin: 0 0 8px;
+  font-size: 1.25rem;
+}
+
+.val-muted {
+  margin: 0;
+  color: var(--val-grey);
+}
+
+.val-form {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid var(--val-grey);
+}
+
+.val-fields {
+  display: grid;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.val-field {
+  display: grid;
+  grid-template-columns: 90px 1fr;
+  align-items: center;
+  gap: 12px;
+}
+
+.val-field label {
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--val-grey);
+}
+
+.val-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  font: inherit;
+  color: var(--val-off-white);
+  background: var(--val-navy);
+  border: 2px solid var(--val-grey);
+  transition: border-color 120ms ease;
+}
+
+.val-input::placeholder {
+  color: var(--val-grey);
+  opacity: 0.7;
+}
+
+.val-input:hover {
+  border-color: var(--val-off-white);
+}
+
+.val-input:focus {
+  outline: none;
+  border-color: var(--val-red);
+}
+
+.val-input.is-invalid {
+  border-color: var(--val-red);
+  border-style: dashed;
+}
+
+.val-field.has-remove {
+  grid-template-columns: 90px 1fr auto;
+}
+
+.val-remove {
+  width: 42px;
+  height: 42px;
+  font: inherit;
+  font-size: 1.25rem;
+  line-height: 1;
+  color: var(--val-grey);
+  background: transparent;
+  border: 2px solid var(--val-grey);
+  cursor: pointer;
+  transition: border-color 120ms ease, color 120ms ease;
+}
+
+.val-remove:hover,
+.val-remove:focus-visible {
+  outline: none;
+  color: var(--val-red);
+  border-color: var(--val-red);
+}
+
+.val-form-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.val-add {
+  padding: 10px 18px;
+  font: inherit;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--val-off-white);
+  background: transparent;
+  border: 2px solid var(--val-red);
+  cursor: pointer;
+  transition: background-color 120ms ease;
+}
+
+.val-add:hover,
+.val-add:focus-visible {
+  outline: none;
+  background: var(--val-red);
+}
+
+.val-count {
+  font-size: 0.9rem;
+}
+
+.val-clear {
+  margin-left: auto;
+  padding: 8px 14px;
+  font: inherit;
+  font-size: 0.85rem;
+  color: var(--val-grey);
+  background: transparent;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: color 120ms ease, border-color 120ms ease;
+}
+
+.val-clear:hover,
+.val-clear:focus-visible {
+  outline: none;
+  color: var(--val-red);
+  border-color: var(--val-red);
+}
+
+.val-clear:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  color: var(--val-grey);
+  border-color: transparent;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+.val-form-actions {
+  flex-wrap: wrap;
+}
+
+.val-primary {
+  background: var(--val-red);
+}
+
+.val-add:disabled,
+.val-remove:disabled,
+.val-input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.val-add:disabled:hover {
+  background: transparent;
+}
+
+.val-primary:disabled:hover {
+  background: var(--val-red);
+}
+
+/* Results */
+
+.val-results {
+  display: grid;
+  gap: 16px;
+  margin-top: 24px;
+}
+
+.val-report {
+  padding: 20px;
+  border: 1px solid var(--val-grey);
+}
+
+.val-status-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.val-status {
+  padding: 10px 14px;
+  border: 1px dashed var(--val-grey);
+}
+
+.val-status.is-error {
+  border-style: solid;
+  border-color: var(--val-red);
+}
+
+.val-table-scroll {
+  overflow-x: auto;
+}
+
+.val-summary th,
+.val-summary td {
+  white-space: nowrap;
+}
+
+.val-summary .val-map-head {
+  white-space: normal;
+}
+
+.val-summary .val-player-cell {
+  padding-left: 0;
+  text-transform: none;
+  letter-spacing: normal;
+  font-size: inherit;
+}
+
+.val-summary tbody th {
+  text-align: left;
+  vertical-align: top;
+}
+
+/* Hover card listing the player's other agents on the map */
+
+.val-summary td {
+  position: relative;
+}
+
+.val-top {
+  position: relative;
+  display: inline-block;
+  cursor: help;
+  border-bottom: 1px dotted var(--val-grey);
+}
+
+.val-top:focus-visible {
+  outline: 2px solid var(--val-red);
+  outline-offset: 2px;
+}
+
+.val-hover-card {
+  position: absolute;
+  left: 0;
+  top: calc(100% + 8px);
+  z-index: 5;
+  display: none;
+  min-width: 220px;
+  padding: 12px 14px;
+  font-size: 0.85rem;
+  font-weight: 400;
+  color: var(--val-off-white);
+  background: var(--val-navy);
+  border: 1px solid var(--val-grey);
+  border-top: 3px solid var(--val-red);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  white-space: nowrap;
+}
+
+.val-top:hover .val-hover-card,
+.val-top:focus-within .val-hover-card,
+.val-top:focus .val-hover-card {
+  display: block;
+}
+
+.val-hover-title {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--val-grey);
+}
+
+.val-hover-list {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.val-hover-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+/* Rows near the bottom of a longer table open the card upwards so it stays in
+   view. Rows 1 and 2 always open downwards so the card never covers the header. */
+.val-summary tbody tr:nth-last-child(-n + 2):nth-child(n + 3) .val-hover-card {
+  top: auto;
+  bottom: calc(100% + 8px);
+  border-top-width: 1px;
+  border-bottom: 3px solid var(--val-red);
+}
+
+@media (min-width: 901px) {
+  /* Let the floating card escape the summary table's wrapper on wide screens. */
+  .val-summary-scroll {
+    overflow: visible;
+  }
+}
+
+@media (max-width: 900px) {
+  /* The scroll container would clip a floating card, so lay it out inline instead. */
+  .val-hover-card,
+  .val-summary tbody tr:nth-last-child(-n + 2):nth-child(n + 3) .val-hover-card {
+    position: static;
+    margin-top: 6px;
+    box-shadow: none;
+    white-space: normal;
+    border-top: 3px solid var(--val-red);
+    border-bottom-width: 1px;
+  }
+}
+
+.val-summary .val-empty {
+  color: var(--val-grey);
+  text-align: center;
+}
+
+/* A tied top agent is highlighted; the hover card names the agents it ties with. */
+.val-top.is-tied > .val-agent-name {
+  color: var(--val-red);
+}
+
+.val-top.is-tied {
+  border-bottom-color: var(--val-red);
+  border-bottom-style: solid;
+}
+
+.val-hover-list li.is-tied .val-agent-name {
+  color: var(--val-red);
+}
+
+.val-tied-mark {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--val-red);
+}
+
+.val-player-button {
+  padding: 6px 12px;
+  font: inherit;
+  font-weight: 700;
+  color: var(--val-off-white);
+  background: transparent;
+  border: 2px solid var(--val-grey);
+  cursor: pointer;
+  transition: border-color 120ms ease, background-color 120ms ease;
+}
+
+.val-player-button:hover,
+.val-player-button:focus-visible {
+  outline: none;
+  border-color: var(--val-red);
+}
+
+.val-player-button.is-active {
+  background: var(--val-red);
+  border-color: var(--val-red);
+}
+
+.val-player-tag {
+  margin-left: 2px;
+  font-weight: 400;
+  font-size: 0.8rem;
+  opacity: 0.75;
+}
+
+.val-report h3 {
+  margin: 0 0 4px;
+  font-size: 1.1rem;
+}
+
+.val-report-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.val-act-picker {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--val-grey);
+}
+
+.val-act-picker select {
+  padding: 8px 10px;
+  font: inherit;
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: normal;
+  color: var(--val-off-white);
+  background: var(--val-navy);
+  border: 2px solid var(--val-grey);
+}
+
+.val-act-picker select:focus {
+  outline: none;
+  border-color: var(--val-red);
+}
+
+.val-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+
+.val-table th,
+.val-table td {
+  padding: 10px 8px;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid rgba(90, 102, 114, 0.5);
+}
+
+.val-table th {
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--val-grey);
+}
+
+.val-table .val-num {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.val-map {
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.val-agents {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.val-agent {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 4px 10px;
+  border: 1px solid var(--val-grey);
+  border-left: 3px solid var(--val-red);
+}
+
+.val-agent-name {
+  font-weight: 700;
+}
+
+.val-agent-games {
+  color: var(--val-off-white);
+}
+
+.val-agent-record {
+  font-size: 0.8rem;
+  color: var(--val-grey);
+}
+
+/* Player detail */
+
+.val-detail .val-map {
+  white-space: normal;
+}
+
+.val-map-games {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: var(--val-grey);
+}
+
+.val-record {
+  display: block;
+  white-space: nowrap;
+}
+
+.val-rate {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--val-grey);
+}
+
+.val-recent {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.val-recent-game {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  padding: 3px 8px;
+  font-size: 0.85rem;
+  border: 1px solid var(--val-grey);
+}
+
+.val-recent-game.is-win {
+  border-color: var(--val-off-white);
+}
+
+.val-recent-game.is-loss {
+  border-color: var(--val-red);
+}
+
+.val-recent-result {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--val-grey);
+}
+
+.val-recent-game.is-win .val-recent-result {
+  color: var(--val-off-white);
+}
+
+.val-recent-game.is-loss .val-recent-result {
+  color: var(--val-red);
+}
+
+@media (max-width: 480px) {
+  .val-field {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+
+  .val-field.has-remove {
+    grid-template-columns: 1fr auto;
+  }
+
+  .val-field.has-remove label {
+    grid-column: 1 / -1;
+  }
+}

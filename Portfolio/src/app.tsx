@@ -351,6 +351,20 @@ export function App() {
             <hr/>
             <div class="resume-entry">
             <div>
+              <h3>VLR API</h3>
+            </div>
+            </div>
+            <div class="resume-bullets">
+              <ul>
+                <li>
+                  Created an unofficial Valorant API for e-sports with easy access to a variety of data surrounding the game, including player stats, match history, kda and more
+                </li>
+              </ul>
+            </div>
+
+            <hr/>
+            <div class="resume-entry">
+            <div>
               <h3>Integrated Case Competition - Semi Finalist</h3>
             </div>
             </div>
@@ -388,6 +402,23 @@ export function App() {
               </ul>
             </div>
             <br/>
+
+            <hr/>
+            <div class="resume-entry">
+            <div>
+              <h3>Scouting App</h3>
+            </div>
+            </div>
+            <div class="resume-bullets">
+              <ul>
+                <li>
+                  Developed a scouting app for my robotics team to easily collect and analyze data on our own and our competitors' robots during competitions
+                </li>
+                <li>
+                  Simple UI & UX allowed for quick and efficient data collection during the fast paced environment of competitions, leading to better strategy decisions and improved robot performance
+                </li>
+              </ul>
+            </div>
         </>
       );
     }
@@ -428,7 +459,7 @@ export function App() {
             <h3>Education</h3>
               <div class="resume-entry">
                 <div>
-                  <strong>University of Waterloo · Bachelors of Computer Science</strong>
+                  <strong>Wilfrid Laurier University · Bachelors of Business Administration (Co-op)</strong>
                   <div><i>Waterloo, ON</i></div>
                 </div>
                 <div class="resume-year">Sept 2022 - Present</div>
@@ -436,7 +467,7 @@ export function App() {
 
             <div class="resume-entry">
                 <div>
-                  <strong>Wilfrid Laurier University · Bachelors of Business Administration (Co-op)</strong>
+                  <strong>University of Waterloo · Bachelors of Computer Science</strong>
                   <div><i>Waterloo, ON</i></div>
                 </div>
                 <div class="resume-year">Sept 2022 - Present</div>
@@ -446,13 +477,15 @@ export function App() {
           <section>
             <hr />
             <h3>Skills</h3>
-            
+
             <p>
               <strong>Languages:</strong> English (fluent), French (fluent) <br/>
-              <strong>Programming: </strong> Python, Java, JavaScript, R, C++, C, LaTeX, CSS, TypeScript <br/>
-              <strong>Tools: </strong> Excel, Word, PowerPoint, Jira, Confluence, Azure DevOps, Tableau, PowerBI, Git
+              <strong>Programming: </strong> Python, Java, JavaScript, CSS, HTML, C++, C, LaTeX, SQL, Visual Basic <br/>
+              <strong>Developer Tools: </strong> Git, Google Cloud Platform, Azure DevOps, Visual Studio, Eclipse, Android Studio, Jupyter, Streamlit <br/>
+              <strong>Tools: </strong> Excel, Word, PowerPoint, Google Suite, Jira, Confluence, Tableau, Power BI, Canva, QuickBooks, Sage, Xero <br/>
+              <strong>Communication Tools: </strong> Microsoft Teams, Jabber, Webex, Slack
             </p>
-            
+
           </section>
 
           <section>
@@ -460,39 +493,49 @@ export function App() {
             <h3>Experience</h3>
               <div class="resume-entry">
                 <div>
-                  <strong>Business Analyst (Co-op)</strong>
-                  <div><i>Royal Bank of Canada</i></div>
+                  <strong>Manager for Marvel Rivals E-Sports Operations</strong>
+                  <div><i>University of Waterloo Athletics Department</i></div>
                 </div>
-                <div class="resume-year">May 2026 - Aug 2026</div>
-              </div>
-
-              <div class="resume-entry">
-                <div>
-                  <strong>Vice President of Finance, Marketing Executive & Education Lead</strong>
-                  <div><i>University of Waterloo Statistics Club</i></div>
-                </div>
-                <div class="resume-year">May 2024 - Apr 2026</div>
+                <div class="resume-year">Sept 2026 - Present</div>
               </div>
               <div class="resume-bullets">
                 <ul>
                   <li>
-                    Developed and managed the club’s semester budget, ensuring resources were allocated effectively across events, projects, and operational needs
+                    Designed and ran the tryout process, including a structured soft-skills rubric to standardize evaluation across multiple evaluators and reduce selection bias
                   </li>
                   <li>
-                    Coordinated with four sub-teams to deliver multiple projects with competing deadlines, ensuring work was completed within budget, timeline, and scope
-                  </li>
-                  <li>
-                    Designed and implemented a comprehensive marketing strategy that increased club engagement by 1100%
-                  </li>
-                  <li>
-                    Planned and led midterm and final exam study sessions, including creating study materials and teaching course concepts to students
+                    Test roster configurations systematically by holding variables constant across consecutive scrims, isolating the effect of individual lineup and role changes on team performance
                   </li>
                 </ul>
               </div>
 
               <div class="resume-entry">
                 <div>
-                  <strong>Cloud Fin-Ops (Co-op)</strong>
+                  <strong>Business Analyst</strong>
+                  <div><i>Royal Bank of Canada</i></div>
+                </div>
+                <div class="resume-year">May 2026 - Aug 2026</div>
+              </div>
+              <div class="resume-bullets">
+                <ul>
+                  <li>
+                    Analyzed large-scale marketing campaign datasets to assess campaign health, track performance trends, and identify areas for improvement
+                  </li>
+                  <li>
+                    Generated data-driven insights and reports to support strategic marketing decisions and improve campaigns
+                  </li>
+                  <li>
+                    Collaborated with stakeholders to communicate statistical findings, campaign results, and performance recommendations
+                  </li>
+                  <li>
+                    Provided actionable recommendations based on quantitative analysis to optimize marketing campaigns and support business objectives
+                  </li>
+                </ul>
+              </div>
+
+              <div class="resume-entry">
+                <div>
+                  <strong>Cloud FinOps (Co-op)</strong>
                   <div><i>Magnet Forensics</i></div>
                 </div>
                 <div class="resume-year">Sept 2025 - Dec 2025</div>
@@ -510,6 +553,9 @@ export function App() {
                   </li>
                   <li>
                     Collaborated and communicated regularly with major stakeholders to present budget updates, cloud spend insights, and cost-saving recommendations
+                  </li>
+                  <li>
+                    Refined FinOps workflows, such as weekly cost reviews and anomaly alerting processes
                   </li>
                 </ul>
               </div>
@@ -541,6 +587,30 @@ export function App() {
 
               <div class="resume-entry">
                 <div>
+                  <strong>Vice President of Finance</strong>
+                  <div><i>University of Waterloo Statistics Club</i></div>
+                </div>
+                <div class="resume-year">May 2024 - Present</div>
+              </div>
+              <div class="resume-bullets">
+                <ul>
+                  <li>
+                    Developed and managed the club's budget throughout the semester
+                  </li>
+                  <li>
+                    Developed and implemented a comprehensive marketing plan that saw a 1100% boost in club engagement
+                  </li>
+                  <li>
+                    Coordinated with 4 sub-teams to ensure the completion of projects with competing deadlines from initiation to completion within budget, timeline, and scope
+                  </li>
+                  <li>
+                    Completed a yearly financial audit and analysis to provide insight into club activities to help plan future events to maximize potential club revenues
+                  </li>
+                </ul>
+              </div>
+
+              <div class="resume-entry">
+                <div>
                   <strong>Software Developer (Co-op)</strong>
                   <div><i>Connex Telecommunications</i></div>
                 </div>
@@ -562,6 +632,61 @@ export function App() {
                   </li>
                 </ul>
               </div>
+
+              <hr/>
+            <div class="resume-entry">
+                <div>
+                  <strong>Programming Lead</strong>
+                  <div><i>Alpha Dogs FIRST Robotics Team</i></div>
+                </div>
+                <div class="resume-year">Sept 2018 - Jun 2022</div>
+              </div>
+            <div class="resume-bullets">
+              <ul>
+                <li>
+                  Utilized strong oral and written communication skills to develop sponsorship presentations and reports to firms such as Canadian Tire and Husky with a 100% success rate in securing funds
+                </li>
+                <li>
+                  Developed, coordinated and managed an outreach program giving students the opportunity to learn basic STEM skills through delivering a lecture for a robotics convention
+                </li>
+                <li>
+                  Worked cross-functionally across teams to ensure that robot programming matched designs
+                </li>
+                <li>
+                  Led programming team meetings to provide project updates, feedback and planned team workflows to ensure a completed robot at the end of the build season
+                </li>
+                <li>
+                  Planned, developed and implemented a comprehensive Java programming training on object-oriented programming and data structures for high school students on the robotics team
+                </li>
+                <li>
+                  Provided strategy decisions for competitions based on the analysis of data for over 200 matches along with solid judgment and intuition
+                </li>
+                <li>
+                  Result-focused, with a drive to produce high quality work shown through the team's consistent placement within the top 20 FIRST Robotics Teams in Canada and three appearances at the FIRST Robotics World Championship
+                </li>
+              </ul>
+            </div>
+
+            <div class="resume-entry">
+                <div>
+                  <strong>Vice President</strong>
+                  <div><i>Music Activity Council</i></div>
+                </div>
+                <div class="resume-year">Sept 2018 - Jun 2022</div>
+              </div>
+            <div class="resume-bullets">
+              <ul>
+                <li>
+                  Planned, organized, and managed a music competition project from initiation to completion within budget, timelines, scope and resources
+                </li>
+                <li>
+                  Participated, contributed, and created events for and initiatives to support the music community
+                </li>
+                <li>
+                  Supported the development of an equitable, diverse and inclusive community
+                </li>
+              </ul>
+            </div>
               <br/>
           </section>
         </>

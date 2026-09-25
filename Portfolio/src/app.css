@@ -245,6 +245,7 @@ body {
 }
 
 .xp-content {
+  box-sizing: border-box;
   height: calc(100% - 26px);
   padding: 18px;
   font-family: "MS Sans Serif", Arial, sans-serif;
