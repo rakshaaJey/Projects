@@ -38,11 +38,16 @@ Showcases key projects and achievements:
 
 #### 3. Resume (Notepad icon)
 Professional resume including:
-- **Skills**: Programming (Python, Java, JavaScript, R, C++, C, LaTeX, CSS, TypeScript), Tools (Excel, Word, PowerPoint, Jira, Confluence, Azure DevOps, Tableau, PowerBI, Git), Languages (English & French fluent)
+- **Skills**: Programming (Python, Java, JavaScript, CSS, HTML, C++, C, LaTeX, SQL, Visual Basic), Developer Tools (Git, Google Cloud Platform, Azure DevOps, Visual Studio, Eclipse, Android Studio, Jupyter, Streamlit), Tools (Excel, Word, PowerPoint, Google Suite, Jira, Confluence, Tableau, Power BI, Canva, QuickBooks, Sage, Xero), Communication Tools (Microsoft Teams, Jabber, Webex, Slack), Languages (English & French fluent)
 - **Experience**:
-  - Cloud Fin-Ops Co-op at Magnet Forensics (2025): Saved $300k+ in cloud costs, built budgeting platform
-  - Audit Intern at Norton McMullen (2025): Completed audits for not-for-profit and for-profit organizations
-  - Software Developer Co-op at Connex Telecommunications (2024): AI chatbot development and maintenance
+  - Manager for Marvel Rivals E-Sports Operations at University of Waterloo Athletics (Sept 2026 - Present): Designed tryout process with structured evaluation rubric, systematic roster testing
+  - Business Analyst at Royal Bank of Canada (May - Aug 2026): Analyzed marketing campaign datasets, delivered data-driven recommendations to stakeholders
+  - Cloud FinOps Co-op at Magnet Forensics (Sept - Dec 2025): Saved $300k+ in cloud costs, managed $14M FY26 cloud budget, built budgeting platform
+  - Audit Intern at Norton McMullen (Jan - Apr 2025): Completed audits for not-for-profit and for-profit organizations
+  - Vice President of Finance at University of Waterloo Statistics Club (May 2024 - Present): Managed club budget, 1100% engagement boost via marketing plan
+  - Software Developer Co-op at Connex Telecommunications (Jan - Apr 2024): AI chatbot development and maintenance
+  - Programming Lead at Alpha Dogs FIRST Robotics Team (2018 - 2022): Led 15-member programming team, top 20 in Canada
+  - Vice President at Music Activity Council (2018 - 2022): Organized music competition and community events
 
 #### 4. Contact Info (Search for People icon)
 Contact information including:

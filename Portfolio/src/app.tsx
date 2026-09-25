@@ -459,7 +459,7 @@ export function App() {
             <h3>Education</h3>
               <div class="resume-entry">
                 <div>
-                  <strong>University of Waterloo · Bachelors of Computer Science</strong>
+                  <strong>Wilfrid Laurier University · Bachelors of Business Administration (Co-op)</strong>
                   <div><i>Waterloo, ON</i></div>
                 </div>
                 <div class="resume-year">Sept 2022 - Present</div>
@@ -467,7 +467,7 @@ export function App() {
 
             <div class="resume-entry">
                 <div>
-                  <strong>Wilfrid Laurier University · Bachelors of Business Administration (Co-op)</strong>
+                  <strong>University of Waterloo · Bachelors of Computer Science</strong>
                   <div><i>Waterloo, ON</i></div>
                 </div>
                 <div class="resume-year">Sept 2022 - Present</div>
@@ -477,13 +477,15 @@ export function App() {
           <section>
             <hr />
             <h3>Skills</h3>
-            
+
             <p>
               <strong>Languages:</strong> English (fluent), French (fluent) <br/>
-              <strong>Programming: </strong> Python, Java, JavaScript, R, C++, C, LaTeX, CSS, TypeScript <br/>
-              <strong>Tools: </strong> Excel, Word, PowerPoint, Jira, Confluence, Azure DevOps, Tableau, PowerBI, Git
+              <strong>Programming: </strong> Python, Java, JavaScript, CSS, HTML, C++, C, LaTeX, SQL, Visual Basic <br/>
+              <strong>Developer Tools: </strong> Git, Google Cloud Platform, Azure DevOps, Visual Studio, Eclipse, Android Studio, Jupyter, Streamlit <br/>
+              <strong>Tools: </strong> Excel, Word, PowerPoint, Google Suite, Jira, Confluence, Tableau, Power BI, Canva, QuickBooks, Sage, Xero <br/>
+              <strong>Communication Tools: </strong> Microsoft Teams, Jabber, Webex, Slack
             </p>
-            
+
           </section>
 
           <section>
@@ -491,7 +493,49 @@ export function App() {
             <h3>Experience</h3>
               <div class="resume-entry">
                 <div>
-                  <strong>Cloud Fin-Ops (Co-op)</strong>
+                  <strong>Manager for Marvel Rivals E-Sports Operations</strong>
+                  <div><i>University of Waterloo Athletics Department</i></div>
+                </div>
+                <div class="resume-year">Sept 2026 - Present</div>
+              </div>
+              <div class="resume-bullets">
+                <ul>
+                  <li>
+                    Designed and ran the tryout process, including a structured soft-skills rubric to standardize evaluation across multiple evaluators and reduce selection bias
+                  </li>
+                  <li>
+                    Test roster configurations systematically by holding variables constant across consecutive scrims, isolating the effect of individual lineup and role changes on team performance
+                  </li>
+                </ul>
+              </div>
+
+              <div class="resume-entry">
+                <div>
+                  <strong>Business Analyst</strong>
+                  <div><i>Royal Bank of Canada</i></div>
+                </div>
+                <div class="resume-year">May 2026 - Aug 2026</div>
+              </div>
+              <div class="resume-bullets">
+                <ul>
+                  <li>
+                    Analyzed large-scale marketing campaign datasets to assess campaign health, track performance trends, and identify areas for improvement
+                  </li>
+                  <li>
+                    Generated data-driven insights and reports to support strategic marketing decisions and improve campaigns
+                  </li>
+                  <li>
+                    Collaborated with stakeholders to communicate statistical findings, campaign results, and performance recommendations
+                  </li>
+                  <li>
+                    Provided actionable recommendations based on quantitative analysis to optimize marketing campaigns and support business objectives
+                  </li>
+                </ul>
+              </div>
+
+              <div class="resume-entry">
+                <div>
+                  <strong>Cloud FinOps (Co-op)</strong>
                   <div><i>Magnet Forensics</i></div>
                 </div>
                 <div class="resume-year">Sept 2025 - Dec 2025</div>
@@ -509,6 +553,9 @@ export function App() {
                   </li>
                   <li>
                     Collaborated and communicated regularly with major stakeholders to present budget updates, cloud spend insights, and cost-saving recommendations
+                  </li>
+                  <li>
+                    Refined FinOps workflows, such as weekly cost reviews and anomaly alerting processes
                   </li>
                 </ul>
               </div>
@@ -534,6 +581,30 @@ export function App() {
                   </li>
                   <li>
                     Excellent written and verbal communication skills were strengthened through client communications throughout the audit process
+                  </li>
+                </ul>
+              </div>
+
+              <div class="resume-entry">
+                <div>
+                  <strong>Vice President of Finance</strong>
+                  <div><i>University of Waterloo Statistics Club</i></div>
+                </div>
+                <div class="resume-year">May 2024 - Present</div>
+              </div>
+              <div class="resume-bullets">
+                <ul>
+                  <li>
+                    Developed and managed the club's budget throughout the semester
+                  </li>
+                  <li>
+                    Developed and implemented a comprehensive marketing plan that saw a 1100% boost in club engagement
+                  </li>
+                  <li>
+                    Coordinated with 4 sub-teams to ensure the completion of projects with competing deadlines from initiation to completion within budget, timeline, and scope
+                  </li>
+                  <li>
+                    Completed a yearly financial audit and analysis to provide insight into club activities to help plan future events to maximize potential club revenues
                   </li>
                 </ul>
               </div>
@@ -592,6 +663,27 @@ export function App() {
                 </li>
                 <li>
                   Result-focused, with a drive to produce high quality work shown through the team's consistent placement within the top 20 FIRST Robotics Teams in Canada and three appearances at the FIRST Robotics World Championship
+                </li>
+              </ul>
+            </div>
+
+            <div class="resume-entry">
+                <div>
+                  <strong>Vice President</strong>
+                  <div><i>Music Activity Council</i></div>
+                </div>
+                <div class="resume-year">Sept 2018 - Jun 2022</div>
+              </div>
+            <div class="resume-bullets">
+              <ul>
+                <li>
+                  Planned, organized, and managed a music competition project from initiation to completion within budget, timelines, scope and resources
+                </li>
+                <li>
+                  Participated, contributed, and created events for and initiatives to support the music community
+                </li>
+                <li>
+                  Supported the development of an equitable, diverse and inclusive community
                 </li>
               </ul>
             </div>
