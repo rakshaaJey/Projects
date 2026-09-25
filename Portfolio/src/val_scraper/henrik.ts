@@ -119,7 +119,8 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<E
   if (!res.ok) {
     const detail = body?.errors?.[0]?.message;
     const friendly: Record<number, string> = {
-      401: "The API key is missing or invalid. Set HENRIKDEV_API_KEY in .env and restart the dev server.",
+      401: "The API key is missing or invalid. Locally, set HENRIKDEV_API_KEY in .env and restart the dev server; in production, set it in the Cloudflare project's variables and redeploy.",
+      500: "The server-side API key is not configured. Set HENRIKDEV_API_KEY in the Cloudflare project's variables and redeploy.",
       404: "Player not found. Check the name and tag.",
       429: "Still rate limited after several retries. Wait a few minutes and try again.",
       503: "The API is temporarily unavailable.",

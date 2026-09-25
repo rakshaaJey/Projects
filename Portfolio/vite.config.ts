@@ -29,14 +29,18 @@ function trailingSlashRedirect(): Plugin {
   }
 }
 
-// Proxy `/api/henrik/*` to the HenrikDev Valorant API and attach the API key
-// from `.env` on the server side, so the key never reaches the browser.
-// In production the same route is served by functions/api/henrik (Cloudflare Pages).
+// LOCAL ONLY: proxy `/api/henrik/*` to the HenrikDev Valorant API from the Vite
+// dev/preview server, attaching the API key read from `.env`. The key never
+// reaches the browser.
+//
+// PRODUCTION: this proxy is not part of the build. The same `/api/henrik/*`
+// route is served by the Cloudflare Pages Function in functions/api/henrik,
+// which reads HENRIKDEV_API_KEY from the Cloudflare project's variables.
 function henrikProxy(env: Record<string, string>): Record<string, ProxyOptions> {
   const target = env.HENRIKDEV_API_BASE || 'https://api.henrikdev.xyz'
   const key = env.HENRIKDEV_API_KEY
   if (!key) {
-    console.warn('[val_scraper] HENRIKDEV_API_KEY is not set; /api/henrik requests will be rejected upstream. See .env.example.')
+    console.warn('[val_scraper] HENRIKDEV_API_KEY is not set in .env; /api/henrik requests will be rejected upstream. See .env.example.')
   }
   return {
     '/api/henrik': {
@@ -49,9 +53,11 @@ function henrikProxy(env: Record<string, string>): Record<string, ProxyOptions> 
 }
 
 // https://vite.dev/config/
-export default defineConfig(({ mode }) => {
-  const env = loadEnv(mode, process.cwd(), '')
-  const proxy = henrikProxy(env)
+export default defineConfig(({ command, mode }) => {
+  // `.env` is only consulted when running a local server (`vite` / `vite preview`).
+  // `vite build` never reads it, so production builds carry no key and print no warning.
+  const isLocalServer = command === 'serve'
+  const proxy = isLocalServer ? henrikProxy(loadEnv(mode, process.cwd(), '')) : undefined
   return {
     plugins: [preact(), trailingSlashRedirect()],
     server: { proxy },
