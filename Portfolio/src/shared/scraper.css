@@ -1,0 +1,667 @@
+/* Shared stylesheet for the scraper pages. Each page sets the palette tokens
+   (--sc-accent, --sc-bg, --sc-fg, --sc-muted, --sc-muted-rgb) on :root. */
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+}
+
+body {
+  font-family: system-ui, Arial, sans-serif;
+  background: var(--sc-bg);
+  color: var(--sc-fg);
+}
+
+.sc-scraper {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 48px 16px;
+}
+
+.sc-header h1 {
+  margin: 0;
+  font-size: 2.25rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.sc-header h1::after {
+  content: "";
+  display: block;
+  width: 56px;
+  height: 4px;
+  margin-top: 12px;
+  background: var(--sc-accent);
+}
+
+.sc-subtitle {
+  margin: 16px 0 0;
+  color: var(--sc-muted);
+}
+
+.sc-buttons {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+  margin-top: 32px;
+}
+
+.sc-button {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 18px 20px;
+  text-align: left;
+  font: inherit;
+  color: var(--sc-fg);
+  background: transparent;
+  border: 2px solid var(--sc-muted);
+  cursor: pointer;
+  transition: border-color 120ms ease, background-color 120ms ease, transform 120ms ease;
+}
+
+.sc-button:hover {
+  border-color: var(--sc-accent);
+  transform: translateY(-2px);
+}
+
+.sc-button:focus-visible {
+  outline: 2px solid var(--sc-accent);
+  outline-offset: 3px;
+}
+
+.sc-button.is-active {
+  background: var(--sc-accent);
+  border-color: var(--sc-accent);
+  color: var(--sc-fg);
+}
+
+.sc-button-label {
+  font-weight: 700;
+  font-size: 1.1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.sc-button-desc {
+  font-size: 0.9rem;
+  color: var(--sc-muted);
+}
+
+.sc-button.is-active .sc-button-desc {
+  color: var(--sc-fg);
+  opacity: 0.85;
+}
+
+.sc-panel {
+  margin-top: 32px;
+  padding: 24px;
+  border: 1px solid var(--sc-muted);
+  border-left: 4px solid var(--sc-accent);
+}
+
+.sc-panel h2 {
+  margin: 0 0 8px;
+  font-size: 1.25rem;
+}
+
+.sc-muted {
+  margin: 0;
+  color: var(--sc-muted);
+}
+
+.sc-form {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid var(--sc-muted);
+}
+
+.sc-fields {
+  display: grid;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.sc-field {
+  display: grid;
+  grid-template-columns: 90px 1fr;
+  align-items: center;
+  gap: 12px;
+}
+
+.sc-field label {
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--sc-muted);
+}
+
+.sc-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  font: inherit;
+  color: var(--sc-fg);
+  background: var(--sc-bg);
+  border: 2px solid var(--sc-muted);
+  transition: border-color 120ms ease;
+}
+
+.sc-input::placeholder {
+  color: var(--sc-muted);
+  opacity: 0.7;
+}
+
+.sc-input:hover {
+  border-color: var(--sc-fg);
+}
+
+.sc-input:focus {
+  outline: none;
+  border-color: var(--sc-accent);
+}
+
+.sc-input.is-invalid {
+  border-color: var(--sc-accent);
+  border-style: dashed;
+}
+
+.sc-field.has-remove {
+  grid-template-columns: 90px 1fr auto;
+}
+
+.sc-remove {
+  width: 42px;
+  height: 42px;
+  font: inherit;
+  font-size: 1.25rem;
+  line-height: 1;
+  color: var(--sc-muted);
+  background: transparent;
+  border: 2px solid var(--sc-muted);
+  cursor: pointer;
+  transition: border-color 120ms ease, color 120ms ease;
+}
+
+.sc-remove:hover,
+.sc-remove:focus-visible {
+  outline: none;
+  color: var(--sc-accent);
+  border-color: var(--sc-accent);
+}
+
+.sc-form-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.sc-add {
+  padding: 10px 18px;
+  font: inherit;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--sc-fg);
+  background: transparent;
+  border: 2px solid var(--sc-accent);
+  cursor: pointer;
+  transition: background-color 120ms ease;
+}
+
+.sc-add:hover,
+.sc-add:focus-visible {
+  outline: none;
+  background: var(--sc-accent);
+}
+
+.sc-count {
+  font-size: 0.9rem;
+}
+
+.sc-clear {
+  margin-left: auto;
+  padding: 8px 14px;
+  font: inherit;
+  font-size: 0.85rem;
+  color: var(--sc-muted);
+  background: transparent;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: color 120ms ease, border-color 120ms ease;
+}
+
+.sc-clear:hover,
+.sc-clear:focus-visible {
+  outline: none;
+  color: var(--sc-accent);
+  border-color: var(--sc-accent);
+}
+
+.sc-clear:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  color: var(--sc-muted);
+  border-color: transparent;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+.sc-form-actions {
+  flex-wrap: wrap;
+}
+
+.sc-primary {
+  background: var(--sc-accent);
+}
+
+.sc-add:disabled,
+.sc-remove:disabled,
+.sc-input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.sc-add:disabled:hover {
+  background: transparent;
+}
+
+.sc-primary:disabled:hover {
+  background: var(--sc-accent);
+}
+
+/* Results */
+
+.sc-results {
+  display: grid;
+  gap: 16px;
+  margin-top: 24px;
+}
+
+.sc-report {
+  padding: 20px;
+  border: 1px solid var(--sc-muted);
+}
+
+.sc-status-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sc-status {
+  padding: 10px 14px;
+  border: 1px dashed var(--sc-muted);
+}
+
+.sc-status.is-error {
+  border-style: solid;
+  border-color: var(--sc-accent);
+}
+
+.sc-table-scroll {
+  overflow-x: auto;
+}
+
+.sc-summary th,
+.sc-summary td {
+  white-space: nowrap;
+}
+
+.sc-summary .sc-map-head {
+  white-space: normal;
+}
+
+.sc-summary .sc-player-cell {
+  padding-left: 0;
+  text-transform: none;
+  letter-spacing: normal;
+  font-size: inherit;
+}
+
+.sc-summary tbody th {
+  text-align: left;
+  vertical-align: top;
+}
+
+/* Hover card listing the player's other agents on the map */
+
+.sc-summary td {
+  position: relative;
+}
+
+.sc-top {
+  position: relative;
+  display: inline-block;
+  cursor: help;
+  border-bottom: 1px dotted var(--sc-muted);
+}
+
+.sc-top:focus-visible {
+  outline: 2px solid var(--sc-accent);
+  outline-offset: 2px;
+}
+
+.sc-hover-card {
+  position: absolute;
+  left: 0;
+  top: calc(100% + 8px);
+  z-index: 5;
+  display: none;
+  min-width: 220px;
+  padding: 12px 14px;
+  font-size: 0.85rem;
+  font-weight: 400;
+  color: var(--sc-fg);
+  background: var(--sc-bg);
+  border: 1px solid var(--sc-muted);
+  border-top: 3px solid var(--sc-accent);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  white-space: nowrap;
+}
+
+.sc-top:hover .sc-hover-card,
+.sc-top:focus-within .sc-hover-card,
+.sc-top:focus .sc-hover-card {
+  display: block;
+}
+
+.sc-hover-title {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--sc-muted);
+}
+
+.sc-hover-list {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sc-hover-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+/* Rows near the bottom of a longer table open the card upwards so it stays in
+   view. Rows 1 and 2 always open downwards so the card never covers the header. */
+.sc-summary tbody tr:nth-last-child(-n + 2):nth-child(n + 3) .sc-hover-card {
+  top: auto;
+  bottom: calc(100% + 8px);
+  border-top-width: 1px;
+  border-bottom: 3px solid var(--sc-accent);
+}
+
+@media (min-width: 901px) {
+  /* Let the floating card escape the summary table's wrapper on wide screens. */
+  .sc-summary-scroll {
+    overflow: visible;
+  }
+}
+
+@media (max-width: 900px) {
+  /* The scroll container would clip a floating card, so lay it out inline instead. */
+  .sc-hover-card,
+  .sc-summary tbody tr:nth-last-child(-n + 2):nth-child(n + 3) .sc-hover-card {
+    position: static;
+    margin-top: 6px;
+    box-shadow: none;
+    white-space: normal;
+    border-top: 3px solid var(--sc-accent);
+    border-bottom-width: 1px;
+  }
+}
+
+.sc-summary .sc-empty {
+  color: var(--sc-muted);
+  text-align: center;
+}
+
+/* A tied top agent is highlighted; the hover card names the agents it ties with. */
+.sc-top.is-tied > .sc-agent-name {
+  color: var(--sc-accent);
+}
+
+.sc-top.is-tied {
+  border-bottom-color: var(--sc-accent);
+  border-bottom-style: solid;
+}
+
+.sc-hover-list li.is-tied .sc-agent-name {
+  color: var(--sc-accent);
+}
+
+.sc-tied-mark {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--sc-accent);
+}
+
+.sc-player-button {
+  padding: 6px 12px;
+  font: inherit;
+  font-weight: 700;
+  color: var(--sc-fg);
+  background: transparent;
+  border: 2px solid var(--sc-muted);
+  cursor: pointer;
+  transition: border-color 120ms ease, background-color 120ms ease;
+}
+
+.sc-player-button:hover,
+.sc-player-button:focus-visible {
+  outline: none;
+  border-color: var(--sc-accent);
+}
+
+.sc-player-button.is-active {
+  background: var(--sc-accent);
+  border-color: var(--sc-accent);
+}
+
+.sc-player-tag {
+  margin-left: 2px;
+  font-weight: 400;
+  font-size: 0.8rem;
+  opacity: 0.75;
+}
+
+.sc-report h3 {
+  margin: 0 0 4px;
+  font-size: 1.1rem;
+}
+
+.sc-report-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.sc-act-picker {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--sc-muted);
+}
+
+.sc-act-picker select {
+  padding: 8px 10px;
+  font: inherit;
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: normal;
+  color: var(--sc-fg);
+  background: var(--sc-bg);
+  border: 2px solid var(--sc-muted);
+}
+
+.sc-act-picker select:focus {
+  outline: none;
+  border-color: var(--sc-accent);
+}
+
+.sc-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+
+.sc-table th,
+.sc-table td {
+  padding: 10px 8px;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid rgb(var(--sc-muted-rgb) / 0.5);
+}
+
+.sc-table th {
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--sc-muted);
+}
+
+.sc-table .sc-num {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.sc-map {
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.sc-agents {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sc-agent {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 4px 10px;
+  border: 1px solid var(--sc-muted);
+  border-left: 3px solid var(--sc-accent);
+}
+
+.sc-agent-name {
+  font-weight: 700;
+}
+
+.sc-agent-games {
+  color: var(--sc-fg);
+}
+
+.sc-agent-record {
+  font-size: 0.8rem;
+  color: var(--sc-muted);
+}
+
+/* Player detail */
+
+.sc-detail .sc-map {
+  white-space: normal;
+}
+
+.sc-map-games {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: var(--sc-muted);
+}
+
+.sc-record {
+  display: block;
+  white-space: nowrap;
+}
+
+.sc-rate {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--sc-muted);
+}
+
+.sc-recent {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sc-recent-game {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  padding: 3px 8px;
+  font-size: 0.85rem;
+  border: 1px solid var(--sc-muted);
+}
+
+.sc-recent-game.is-win {
+  border-color: var(--sc-fg);
+}
+
+.sc-recent-game.is-loss {
+  border-color: var(--sc-accent);
+}
+
+.sc-recent-result {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--sc-muted);
+}
+
+.sc-recent-game.is-win .sc-recent-result {
+  color: var(--sc-fg);
+}
+
+.sc-recent-game.is-loss .sc-recent-result {
+  color: var(--sc-accent);
+}
+
+@media (max-width: 480px) {
+  .sc-field {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+
+  .sc-field.has-remove {
+    grid-template-columns: 1fr auto;
+  }
+
+  .sc-field.has-remove label {
+    grid-column: 1 / -1;
+  }
+}

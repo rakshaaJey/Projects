@@ -1,7 +1,7 @@
 import { useEffect, useState } from "preact/hooks";
 
-// Namespaced so keys never collide with the desktop page on the same origin.
-const PREFIX = "val_scraper:";
+// Callers namespace their own keys (e.g. "val_scraper:..."), so pages never collide.
+const PREFIX = "";
 
 function read<T>(key: string): T | undefined {
   try {

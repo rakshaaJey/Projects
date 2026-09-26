@@ -1,0 +1,70 @@
+@import "../shared/scraper.css";
+
+/* Marvel Rivals palette */
+:root {
+  --sc-accent: #f5c518;
+  --sc-bg: #12131c;
+  --sc-fg: #f3f1ea;
+  --sc-muted: #6b7280;
+  --sc-muted-rgb: 107 114 128;
+}
+
+/* Yellow-on-yellow text is unreadable, so selected controls use dark text. */
+.sc-button.is-active,
+.sc-button.is-active .sc-button-desc,
+.sc-player-button.is-active,
+.sc-primary,
+.sc-add:hover,
+.sc-add:focus-visible,
+.sc-tie:hover,
+.sc-tie:focus-visible,
+.sc-tie.is-open {
+  color: var(--sc-bg);
+}
+
+.sc-primary:disabled {
+  color: var(--sc-bg);
+}
+
+/* Game mode filter */
+
+.mr-modes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+  margin: 16px 0 0;
+  padding: 12px 14px;
+  border: 1px solid var(--sc-muted);
+}
+
+.mr-modes-title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--sc-muted);
+}
+
+.mr-mode {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.mr-mode input {
+  accent-color: var(--sc-accent);
+}
+
+.mr-mode-count {
+  font-size: 0.8rem;
+  color: var(--sc-muted);
+}
+
+.mr-note {
+  margin: 10px 0 0;
+  font-size: 0.85rem;
+  color: var(--sc-muted);
+}

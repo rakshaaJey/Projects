@@ -1,15 +1,15 @@
 import { useState } from "preact/hooks";
 import { fetchCompetitiveMatches, lookupAccount, HenrikError, type Account } from "./henrik.ts";
 import { analyzeMatches, topAgents, winRate, type ActBreakdown, type MapBreakdown } from "./analysis.ts";
-import { clearStored, usePersistentState } from "./storage.ts";
+import { clearStored, usePersistentState } from "../shared/storage.ts";
 
 // localStorage keys (see storage.ts); bump the suffix if the saved shape changes.
 const STORE = {
-  scraper: "scraper.v1",
-  players: "tracker.players.v1",
-  results: "tracker.results.v1",
-  act: "tracker.act.v1",
-  selected: "tracker.selected.v1",
+  scraper: "val_scraper:scraper.v1",
+  players: "val_scraper:tracker.players.v1",
+  results: "val_scraper:tracker.results.v1",
+  act: "val_scraper:tracker.act.v1",
+  selected: "val_scraper:tracker.selected.v1",
 } as const;
 
 type Scraper = "vlr" | "tracker";
@@ -48,7 +48,7 @@ function TopAgentCell({ entry }: { entry: MapBreakdown | undefined }) {
   const tied = entry ? topAgents(entry.agents) : [];
   const top = tied[0];
 
-  if (!entry || !top) return <td class="val-empty">—</td>;
+  if (!entry || !top) return <td class="sc-empty">—</td>;
 
   const tiedNames = new Set(tied.slice(1).map((a) => a.agent));
   const isTie = tiedNames.size > 0;
@@ -57,13 +57,13 @@ function TopAgentCell({ entry }: { entry: MapBreakdown | undefined }) {
   return (
     <td>
       <span
-        class={`val-top ${isTie ? "is-tied" : ""}`}
+        class={`sc-top ${isTie ? "is-tied" : ""}`}
         tabindex={0}
         aria-label={isTie ? `${top.agent}, tied with ${[...tiedNames].join(", ")}` : undefined}
       >
-        <span class="val-agent-name">{top.agent}</span>
-        <span class="val-hover-card" role="tooltip">
-          <span class="val-hover-title">
+        <span class="sc-agent-name">{top.agent}</span>
+        <span class="sc-hover-card" role="tooltip">
+          <span class="sc-hover-title">
             {isTie
               ? `Tied for most played on ${entry.map}`
               : alsoPlayed.length
@@ -71,14 +71,14 @@ function TopAgentCell({ entry }: { entry: MapBreakdown | undefined }) {
                 : `Only agent played on ${entry.map}`}
           </span>
           {alsoPlayed.length > 0 && (
-            <ul class="val-hover-list">
+            <ul class="sc-hover-list">
               {alsoPlayed.map((a) => (
                 <li key={a.agent} class={tiedNames.has(a.agent) ? "is-tied" : ""}>
-                  <span class="val-agent-name">
+                  <span class="sc-agent-name">
                     {a.agent}
-                    {tiedNames.has(a.agent) && <span class="val-tied-mark"> tied</span>}
+                    {tiedNames.has(a.agent) && <span class="sc-tied-mark"> tied</span>}
                   </span>
-                  <span class="val-agent-record">
+                  <span class="sc-agent-record">
                     ×{a.games} · {a.wins}W-{a.losses}L{a.draws ? `-${a.draws}D` : ""}
                   </span>
                 </li>
@@ -87,7 +87,7 @@ function TopAgentCell({ entry }: { entry: MapBreakdown | undefined }) {
           )}
         </span>
       </span>{" "}
-      <span class="val-agent-record">
+      <span class="sc-agent-record">
         ×{top.games} of {entry.games}
       </span>
     </td>
@@ -99,13 +99,13 @@ function PlayerDetail({ player, act }: { player: DonePlayer; act: ActBreakdown |
   const { account, matchCount } = player;
   const actRate = act ? winRate({ wins: act.maps.reduce((n, m) => n + m.wins, 0), losses: act.maps.reduce((n, m) => n + m.losses, 0) }) : null;
   return (
-    <article class="val-report">
-      <header class="val-report-header">
+    <article class="sc-report">
+      <header class="sc-report-header">
         <div>
           <h3>
             {account.name}#{account.tag}
           </h3>
-          <p class="val-muted">
+          <p class="sc-muted">
             {account.region.toUpperCase()} · level {account.account_level} · {matchCount} competitive match{matchCount === 1 ? "" : "es"} on record
             {act && ` · ${act.games} in ${act.act}`}
             {actRate !== null && ` · ${actRate}% win rate`}
@@ -114,14 +114,14 @@ function PlayerDetail({ player, act }: { player: DonePlayer; act: ActBreakdown |
       </header>
 
       {!act ? (
-        <p class="val-muted">No competitive matches for this player in the selected act.</p>
+        <p class="sc-muted">No competitive matches for this player in the selected act.</p>
       ) : (
-        <div class="val-table-scroll">
-          <table class="val-table val-detail">
+        <div class="sc-table-scroll">
+          <table class="sc-table sc-detail">
             <thead>
               <tr>
                 <th>Map</th>
-                <th class="val-num">W / L</th>
+                <th class="sc-num">W / L</th>
                 <th>Agent history</th>
                 <th>Most recent</th>
               </tr>
@@ -131,25 +131,25 @@ function PlayerDetail({ player, act }: { player: DonePlayer; act: ActBreakdown |
                 const rate = winRate(m);
                 return (
                   <tr key={m.map}>
-                    <td class="val-map">
+                    <td class="sc-map">
                       {m.map}
-                      <span class="val-map-games">
+                      <span class="sc-map-games">
                         {m.games} game{m.games === 1 ? "" : "s"}
                       </span>
                     </td>
-                    <td class="val-num">
-                      <span class="val-record">
+                    <td class="sc-num">
+                      <span class="sc-record">
                         {m.wins}W-{m.losses}L{m.draws ? `-${m.draws}D` : ""}
                       </span>
-                      <span class="val-rate">{rate === null ? "—" : `${rate}%`}</span>
+                      <span class="sc-rate">{rate === null ? "—" : `${rate}%`}</span>
                     </td>
                     <td>
-                      <ul class="val-agents">
+                      <ul class="sc-agents">
                         {m.agents.map((a) => (
-                          <li key={a.agent} class="val-agent">
-                            <span class="val-agent-name">{a.agent}</span>
-                            <span class="val-agent-games">×{a.games}</span>
-                            <span class="val-agent-record" title="wins-losses">
+                          <li key={a.agent} class="sc-agent">
+                            <span class="sc-agent-name">{a.agent}</span>
+                            <span class="sc-agent-games">×{a.games}</span>
+                            <span class="sc-agent-record" title="wins-losses">
                               {a.wins}W-{a.losses}L{a.draws ? `-${a.draws}D` : ""}
                             </span>
                           </li>
@@ -157,15 +157,15 @@ function PlayerDetail({ player, act }: { player: DonePlayer; act: ActBreakdown |
                       </ul>
                     </td>
                     <td>
-                      <ol class="val-recent" aria-label="Most recent games, newest first">
+                      <ol class="sc-recent" aria-label="Most recent games, newest first">
                         {m.recent.map((g) => (
                           <li
                             key={g.startedAt}
-                            class={`val-recent-game is-${g.result}`}
+                            class={`sc-recent-game is-${g.result}`}
                             title={`${new Date(g.startedAt).toLocaleDateString()} · ${g.result}`}
                           >
                             {g.agent}
-                            <span class="val-recent-result">{RESULT_LABEL[g.result]}</span>
+                            <span class="sc-recent-result">{RESULT_LABEL[g.result]}</span>
                           </li>
                         ))}
                       </ol>
@@ -219,12 +219,12 @@ function ResultsSummary({ ids, results }: { ids: string[]; results: Record<strin
   const details = done.filter((p) => selectedPlayers.includes(p.riotId));
 
   return (
-    <section class="val-results" aria-live="polite">
+    <section class="sc-results" aria-live="polite">
       {pending.length > 0 && (
-        <ul class="val-status-list">
+        <ul class="sc-status-list">
           {pending.map((p) => (
-            <li key={p.id} class={`val-status is-${p.status}`}>
-              <strong>{p.id}</strong> <span class="val-muted">{p.message}</span>
+            <li key={p.id} class={`sc-status is-${p.status}`}>
+              <strong>{p.id}</strong> <span class="sc-muted">{p.message}</span>
             </li>
           ))}
         </ul>
@@ -232,13 +232,13 @@ function ResultsSummary({ ids, results }: { ids: string[]; results: Record<strin
 
       {done.length > 0 && (
         <>
-          <header class="val-report-header">
+          <header class="sc-report-header">
             <div>
               <h3>Most played agent per map</h3>
-              <p class="val-muted">Select one or more players to see their agent history, win rate and recent picks per map.</p>
+              <p class="sc-muted">Select one or more players to see their agent history, win rate and recent picks per map.</p>
             </div>
             {acts.length > 0 && (
-              <label class="val-act-picker">
+              <label class="sc-act-picker">
                 <span>Act</span>
                 <select value={act} onChange={(e) => setSelectedAct((e.currentTarget as HTMLSelectElement).value)}>
                   {acts.map((a) => (
@@ -252,15 +252,15 @@ function ResultsSummary({ ids, results }: { ids: string[]; results: Record<strin
           </header>
 
           {maps.length === 0 ? (
-            <p class="val-muted">No competitive matches found in this act.</p>
+            <p class="sc-muted">No competitive matches found in this act.</p>
           ) : (
-            <div class="val-table-scroll val-summary-scroll">
-              <table class="val-table val-summary">
+            <div class="sc-table-scroll sc-summary-scroll">
+              <table class="sc-table sc-summary">
                 <thead>
                   <tr>
                     <th>Player</th>
                     {maps.map((map) => (
-                      <th key={map} class="val-map-head">
+                      <th key={map} class="sc-map-head">
                         {map}
                       </th>
                     ))}
@@ -271,15 +271,15 @@ function ResultsSummary({ ids, results }: { ids: string[]; results: Record<strin
                     const playerAct = actFor(p);
                     return (
                       <tr key={p.riotId}>
-                        <th scope="row" class="val-player-cell">
+                        <th scope="row" class="sc-player-cell">
                           <button
                             type="button"
-                            class={`val-player-button ${selectedPlayers.includes(p.riotId) ? "is-active" : ""}`}
+                            class={`sc-player-button ${selectedPlayers.includes(p.riotId) ? "is-active" : ""}`}
                             aria-pressed={selectedPlayers.includes(p.riotId)}
                             onClick={() => togglePlayer(p.riotId)}
                           >
                             {p.account.name}
-                            <span class="val-player-tag">#{p.account.tag}</span>
+                            <span class="sc-player-tag">#{p.account.tag}</span>
                           </button>
                         </th>
                         {maps.map((map) => (
@@ -364,20 +364,20 @@ function TrackerForm() {
 
   return (
     <>
-      <form class="val-form" onSubmit={analyze}>
-        <p class="val-muted">Enter Riot IDs in the form name#tag. Add more boxes for extra players.</p>
-        <div class="val-fields">
+      <form class="sc-form" onSubmit={analyze}>
+        <p class="sc-muted">Enter Riot IDs in the form name#tag. Add more boxes for extra players.</p>
+        <div class="sc-fields">
           {players.map((value, i) => {
             const trimmed = value.trim();
             const invalid = trimmed !== "" && !RIOT_ID_PATTERN.test(trimmed);
             const inputId = `tracker-player-${i + 1}`;
             return (
-              <div class={`val-field ${canRemove ? "has-remove" : ""}`} key={inputId}>
+              <div class={`sc-field ${canRemove ? "has-remove" : ""}`} key={inputId}>
                 <label for={inputId}>Player {i + 1}</label>
                 <input
                   id={inputId}
                   type="text"
-                  class={`val-input ${invalid ? "is-invalid" : ""}`}
+                  class={`sc-input ${invalid ? "is-invalid" : ""}`}
                   placeholder="SpaceRock#R0CK"
                   value={value}
                   autocomplete="off"
@@ -389,7 +389,7 @@ function TrackerForm() {
                 {canRemove && (
                   <button
                     type="button"
-                    class="val-remove"
+                    class="sc-remove"
                     aria-label={`Remove player ${i + 1}`}
                     title="Remove this player"
                     disabled={running}
@@ -402,19 +402,19 @@ function TrackerForm() {
             );
           })}
         </div>
-        <div class="val-form-actions">
-          <button type="submit" class="val-add val-primary" disabled={running || validIds.length === 0}>
+        <div class="sc-form-actions">
+          <button type="submit" class="sc-add sc-primary" disabled={running || validIds.length === 0}>
             {running ? "Analyzing…" : `Analyze ${validIds.length || ""} player${validIds.length === 1 ? "" : "s"}`}
           </button>
-          <button type="button" class="val-add" disabled={running} onClick={addPlayer}>
+          <button type="button" class="sc-add" disabled={running} onClick={addPlayer}>
             + Add player
           </button>
-          <span class="val-muted val-count">
+          <span class="sc-muted sc-count">
             {players.length} player{players.length === 1 ? "" : "s"}
           </span>
           <button
             type="button"
-            class="val-clear"
+            class="sc-clear"
             disabled={running || (players.every((p) => p.trim() === "") && Object.keys(results).length === 0)}
             onClick={clearAll}
           >
@@ -433,35 +433,35 @@ export function ValScraper() {
   const current = scrapers.find((s) => s.id === active);
 
   return (
-    <main class="val-scraper">
-      <header class="val-header">
+    <main class="sc-scraper">
+      <header class="sc-header">
         <h1>val_scraper</h1>
-        <p class="val-subtitle">Choose a data source to get started</p>
+        <p class="sc-subtitle">Choose a data source to get started</p>
       </header>
 
-      <div class="val-buttons">
+      <div class="sc-buttons">
         {scrapers.map((s) => (
           <button
             key={s.id}
             type="button"
-            class={`val-button ${active === s.id ? "is-active" : ""}`}
+            class={`sc-button ${active === s.id ? "is-active" : ""}`}
             aria-pressed={active === s.id}
             onClick={() => setActive(s.id)}
           >
-            <span class="val-button-label">{s.label}</span>
-            <span class="val-button-desc">{s.description}</span>
+            <span class="sc-button-label">{s.label}</span>
+            <span class="sc-button-desc">{s.description}</span>
           </button>
         ))}
       </div>
 
-      <section class="val-panel">
+      <section class="sc-panel">
         {current ? (
           <>
             <h2>{current.label}</h2>
-            <p class="val-muted">{current.description}</p>
+            <p class="sc-muted">{current.description}</p>
           </>
         ) : (
-          <p class="val-muted">No scraper selected.</p>
+          <p class="sc-muted">No scraper selected.</p>
         )}
         {/* Kept mounted (just hidden) so switching panels never discards an analysis in progress. */}
         <div hidden={active !== "tracker"}>
