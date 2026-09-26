@@ -63,6 +63,33 @@
   color: var(--sc-muted);
 }
 
+.mr-seasons {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--sc-muted);
+}
+
+.mr-seasons select {
+  padding: 8px 10px;
+  font: inherit;
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: normal;
+  color: var(--sc-fg);
+  background: var(--sc-bg);
+  border: 2px solid var(--sc-muted);
+}
+
+.mr-seasons select:focus {
+  outline: none;
+  border-color: var(--sc-accent);
+}
+
 .mr-note {
   margin: 10px 0 0;
   font-size: 0.85rem;

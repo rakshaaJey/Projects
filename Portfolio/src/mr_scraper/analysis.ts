@@ -1,8 +1,10 @@
-import type { MrHero, MrMap, MrMatch } from "./api.ts";
+import type { MrMatch } from "./api.ts";
+import { HEROES } from "./data/heroes.ts";
+import { MAPS } from "./data/maps.ts";
 
 export type MatchResult = "win" | "loss" | "draw";
 
-/** Objective modes the summary is split by. Anything else (Doom Match, Conquest, ...) lands in "Other". */
+/** Objective modes the summary is split by. Anything else (Doom Match, Conquest, arcade, ...) lands in "Other". */
 export type Objective = "Domination" | "Convoy" | "Convergence" | "Other";
 export const OBJECTIVES: Objective[] = ["Domination", "Convoy", "Convergence", "Other"];
 
@@ -38,100 +40,74 @@ export type PlayerAnalysis = {
   byObjective: Record<Objective, Breakdown>;
   /** Every game mode id seen in the raw history, with how many games it had (before filtering). */
   gameModes: GameModeInfo[];
-  /** Map ids in the history that could not be matched to a known map. */
+  /** Map ids in the history that are missing from the map dictionary. */
   unknownMapIds: number[];
+  /** Matches in the counted modes that carried no hero id (usually left early), skipped from the tallies. */
+  skippedNoHero: number;
 };
 
 export const RECENT_LIMIT = 5;
 
 /**
- * Names for the API's numeric game_mode_id. The API does not document these;
- * the values below are the community-observed ones. Anything unlisted is shown
- * as "Mode #n" so it can still be selected in the filter.
+ * Names for the numeric game_mode_id in match history. 2 = Competitive is
+ * confirmed from real data (ranked players' histories are all mode 2 and the
+ * count matches their ranked totals). 1 and 3 are the community-observed
+ * values for Quick Match and Custom. Anything unlisted shows as "Mode #n".
  */
 export const GAME_MODE_NAMES: Record<number, string> = {
   1: "Quick Match",
   2: "Competitive",
   3: "Custom",
-  4: "Practice vs AI",
-  5: "Arcade",
-  6: "Conquest",
-  7: "Doom Match",
 };
 
 /** Game modes counted by default: competitive and custom games. */
 export const DEFAULT_GAME_MODES = [2, 3];
 
-export function gameModeName(id: number, apiName?: string): string {
-  return apiName || GAME_MODE_NAMES[id] || `Mode #${id}`;
+export function gameModeName(id: number): string {
+  return GAME_MODE_NAMES[id] || `Mode #${id}`;
 }
 
-/** Fallback map -> objective table (from the community wiki) for maps the API returns without a mode. */
-const MAP_OBJECTIVE_FALLBACK: Record<string, Objective> = {
-  "yggdrasill path": "Convoy",
-  "yggdrasil path": "Convoy",
-  "spider-islands": "Convoy",
-  "spider islands": "Convoy",
-  midtown: "Convoy",
-  arakko: "Convoy",
-  "symbiotic surface": "Convergence",
-  "shin-shibuya": "Convergence",
-  "hall of djalia": "Convergence",
-  "central park": "Convergence",
-  "heart of heaven": "Convergence",
-  "hell's heaven": "Domination",
-  "birnin t'challa": "Domination",
-  "royal palace": "Domination",
-  krakoa: "Domination",
-  "celestial husk": "Domination",
-};
-
-export function classifyObjective(gameMode: string | undefined, mapName?: string): Objective {
-  const mode = (gameMode ?? "").toLowerCase();
-  if (mode.includes("domination")) return "Domination";
-  if (mode.includes("convoy")) return "Convoy";
-  if (mode.includes("convergence")) return "Convergence";
-  if (mapName) {
-    const key = mapName.toLowerCase().replace(/^.*?:\s*/, "").trim(); // strip "Tokyo 2099: " style prefixes
-    if (MAP_OBJECTIVE_FALLBACK[key]) return MAP_OBJECTIVE_FALLBACK[key];
+export function heroName(id: number | undefined): string {
+  if (id === undefined || id === null) return "Unknown hero";
+  const direct = HEROES[id];
+  if (direct) return direct;
+  // Variant ids like 10571 (Deadpool as Vanguard) fall back to the base hero 1057.
+  if (id >= 10000) {
+    const base = HEROES[Math.floor(id / 10)];
+    if (base) return base;
   }
-  return "Other";
+  return `Hero #${id}`;
 }
 
-export type MapLookup = Map<number, { name: string; objective: Objective }>;
+const titleCase = (s: string) => s.toLowerCase().replace(/(^|[\s'(-])([a-z])/g, (m) => m.toUpperCase());
 
-export function buildMapLookup(maps: MrMap[]): MapLookup {
-  const lookup: MapLookup = new Map();
-  for (const m of maps) {
-    if (typeof m.id !== "number") continue;
-    const name = m.full_name || m.name || `Map #${m.id}`;
-    lookup.set(m.id, { name, objective: classifyObjective(m.game_mode, m.name || m.full_name) });
-  }
-  return lookup;
+export type MapInfo = { name: string; objective: Objective; mode: string; known: boolean };
+
+export function mapInfo(id: number): MapInfo {
+  const entry = MAPS[id];
+  if (!entry) return { name: `Map #${id}`, objective: "Other", mode: "", known: false };
+  const mode = entry.mode.toUpperCase();
+  const objective: Objective = mode.includes("DOMINATION")
+    ? "Domination"
+    : mode.includes("CONVOY")
+      ? "Convoy"
+      : mode.includes("CONVERGENCE")
+        ? "Convergence"
+        : "Other";
+  return { name: `${titleCase(entry.map)} (${titleCase(entry.mode)})`, objective, mode: entry.mode, known: true };
 }
 
 export function matchOutcome(m: MrMatch): MatchResult {
   const p = m.match_player;
-  const flag = typeof p?.is_win === "object" && p.is_win !== null ? p.is_win.is_win : p?.is_win;
+  const raw = p?.is_win;
+  const flag = typeof raw === "object" && raw !== null ? raw.is_win : raw;
   if (typeof flag === "boolean") return flag ? "win" : "loss";
+  if (typeof flag === "number") return flag > 0 ? "win" : "loss";
   // Fall back to comparing the winning side with the player's side, when both are known.
   if (m.match_winner_side !== undefined && p?.camp !== undefined) {
-    if (Number(m.match_winner_side) === Number(p.camp)) return "win";
-    if (Number(m.match_winner_side) === 0 || Number(m.match_winner_side) === -1) return "draw";
-    return "loss";
+    return Number(m.match_winner_side) === Number(p.camp) ? "win" : "loss";
   }
   return "draw";
-}
-
-/** Heroes the player used in a match, main hero first. */
-export function heroesInMatch(m: MrMatch): MrHero[] {
-  const p = m.match_player;
-  const list = (p?.player_heroes ?? []).filter((h) => h && h.hero_name);
-  if (list.length > 0) {
-    const playTime = (h: MrHero) => Number(h.play_time) || 0;
-    return [...list].sort((a, b) => playTime(b) - playTime(a));
-  }
-  return p?.player_hero?.hero_name ? [p.player_hero] : [];
 }
 
 type Acc = {
@@ -145,33 +121,24 @@ type Acc = {
 
 const newAcc = (): Acc => ({ games: 0, wins: 0, losses: 0, draws: 0, heroes: new Map(), recent: [] });
 
-function record(acc: Acc, m: MrMatch, heroes: MrHero[], result: MatchResult, mapName: string): void {
+function record(acc: Acc, m: MrMatch, hero: string, result: MatchResult, mapName: string): void {
   acc.games++;
   if (result === "win") acc.wins++;
   else if (result === "loss") acc.losses++;
   else acc.draws++;
 
-  // Count the match once per distinct hero the player used in it.
-  const seen = new Set<string>();
-  for (const h of heroes) {
-    const name = h.hero_name || "Unknown hero";
-    if (seen.has(name)) continue;
-    seen.add(name);
-    let tally = acc.heroes.get(name);
-    if (!tally) {
-      // Matches are visited newest-first, so the first sighting is the latest game.
-      tally = { hero: name, games: 0, wins: 0, losses: 0, draws: 0, lastPlayedAt: m.match_time_stamp };
-      acc.heroes.set(name, tally);
-    }
-    tally.games++;
-    if (result === "win") tally.wins++;
-    else if (result === "loss") tally.losses++;
-    else tally.draws++;
+  let tally = acc.heroes.get(hero);
+  if (!tally) {
+    // Matches are visited newest-first, so the first sighting is the latest game.
+    tally = { hero, games: 0, wins: 0, losses: 0, draws: 0, lastPlayedAt: m.match_time_stamp };
+    acc.heroes.set(hero, tally);
   }
+  tally.games++;
+  if (result === "win") tally.wins++;
+  else if (result === "loss") tally.losses++;
+  else tally.draws++;
 
-  if (acc.recent.length < RECENT_LIMIT) {
-    acc.recent.push({ hero: heroes[0]?.hero_name || "Unknown hero", result, startedAt: m.match_time_stamp, map: mapName });
-  }
+  if (acc.recent.length < RECENT_LIMIT) acc.recent.push({ hero, result, startedAt: m.match_time_stamp, map: mapName });
 }
 
 function finish(acc: Acc): Breakdown {
@@ -195,13 +162,13 @@ export function winRate(b: { wins: number; losses: number }): number | null {
  * Tallies heroes overall and per objective mode for the matches whose
  * game_mode_id is in `includedModes` (e.g. competitive and custom).
  */
-export function analyzeMatches(matches: MrMatch[], mapLookup: MapLookup, includedModes: Set<number>): PlayerAnalysis {
+export function analyzeMatches(matches: MrMatch[], includedModes: Set<number>): PlayerAnalysis {
   const ordered = [...matches].sort((a, b) => (b.match_time_stamp ?? 0) - (a.match_time_stamp ?? 0));
 
   const modeCounts = new Map<number, GameModeInfo>();
   for (const m of ordered) {
     const id = Number(m.game_mode_id);
-    const info = modeCounts.get(id) ?? { id, name: gameModeName(id, m.game_mode_name), games: 0 };
+    const info = modeCounts.get(id) ?? { id, name: gameModeName(id), games: 0 };
     info.games++;
     modeCounts.set(id, info);
   }
@@ -209,18 +176,22 @@ export function analyzeMatches(matches: MrMatch[], mapLookup: MapLookup, include
   const overall = newAcc();
   const byObjective: Record<Objective, Acc> = { Domination: newAcc(), Convoy: newAcc(), Convergence: newAcc(), Other: newAcc() };
   const unknownMaps = new Set<number>();
+  let skippedNoHero = 0;
 
   for (const m of ordered) {
     if (!includedModes.has(Number(m.game_mode_id))) continue;
-    const heroes = heroesInMatch(m);
-    if (heroes.length === 0) continue;
+    const heroId = Number(m.match_player?.player_hero?.hero_id);
+    if (!heroId) {
+      // The API reports hero 0 when nothing was recorded for the player (e.g. left before picking).
+      skippedNoHero++;
+      continue;
+    }
+    const hero = heroName(heroId);
     const result = matchOutcome(m);
-    const mapInfo = mapLookup.get(Number(m.match_map_id));
-    if (!mapInfo) unknownMaps.add(Number(m.match_map_id));
-    const mapName = mapInfo?.name ?? `Map #${m.match_map_id}`;
-    const objective = mapInfo?.objective ?? "Other";
-    record(overall, m, heroes, result, mapName);
-    record(byObjective[objective], m, heroes, result, mapName);
+    const map = mapInfo(Number(m.match_map_id));
+    if (!map.known) unknownMaps.add(Number(m.match_map_id));
+    record(overall, m, hero, result, map.name);
+    record(byObjective[map.objective], m, hero, result, map.name);
   }
 
   return {
@@ -233,5 +204,6 @@ export function analyzeMatches(matches: MrMatch[], mapLookup: MapLookup, include
     },
     gameModes: [...modeCounts.values()].sort((a, b) => a.id - b.id),
     unknownMapIds: [...unknownMaps].sort((a, b) => a - b),
+    skippedNoHero,
   };
 }

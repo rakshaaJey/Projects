@@ -1,8 +1,7 @@
 import { useState } from "preact/hooks";
-import { ApiError, fetchMaps, fetchMatchHistory, findPlayer, type MrMatch, type MrPlayer } from "./api.ts";
+import { ApiError, fetchRecentMatches, findPlayer, type MrMatch, type MrPlayer } from "./api.ts";
 import {
   analyzeMatches,
-  buildMapLookup,
   DEFAULT_GAME_MODES,
   gameModeName,
   OBJECTIVES,
@@ -10,7 +9,6 @@ import {
   winRate,
   type Breakdown,
   type GameModeInfo,
-  type MapLookup,
   type Objective,
   type PlayerAnalysis,
 } from "./analysis.ts";
@@ -19,8 +17,8 @@ import { clearStored, usePersistentState } from "../shared/storage.ts";
 // localStorage keys (see shared/storage.ts); bump the suffix if the saved shape changes.
 const STORE = {
   players: "mr_scraper:players.v1",
-  results: "mr_scraper:results.v1",
-  maps: "mr_scraper:maps.v1",
+  results: "mr_scraper:results.v2",
+  seasonsBack: "mr_scraper:seasonsBack.v1",
   modes: "mr_scraper:modes.v1",
   selected: "mr_scraper:selected.v1",
 } as const;
@@ -28,8 +26,11 @@ const STORE = {
 // The form always shows at least this many player inputs.
 const MIN_PLAYER_SLOTS = 5;
 
-// Marvel Rivals usernames: no tag, 2-20 visible characters.
+// Marvel Rivals usernames: 2-20 visible characters.
 const USERNAME_PATTERN = /^\S.{0,18}\S$/;
+
+// Each season adds at most 20 matches; cap how far back the page will look.
+const MAX_SEASONS_BACK = 5;
 
 const RESULT_LABEL = { win: "W", loss: "L", draw: "D" } as const;
 
@@ -37,12 +38,9 @@ const RESULT_LABEL = { win: "W", loss: "L", draw: "D" } as const;
 type PlayerResult =
   | { status: "loading"; message: string }
   | { status: "error"; message: string }
-  | { status: "done"; player: MrPlayer; matches: MrMatch[] };
+  | { status: "done"; player: MrPlayer; matches: MrMatch[]; seasons: number[] };
 
-type DonePlayer = { username: string; player: MrPlayer; matches: MrMatch[]; analysis: PlayerAnalysis };
-
-type StoredMaps = { fetchedAt: number; maps: Parameters<typeof buildMapLookup>[0] };
-const MAPS_TTL_MS = 24 * 60 * 60 * 1000;
+type DonePlayer = { username: string; player: MrPlayer; matches: MrMatch[]; seasons: number[]; analysis: PlayerAnalysis };
 
 function finishedOnly(results: Record<string, PlayerResult>): Record<string, PlayerResult> {
   return Object.fromEntries(Object.entries(results).filter(([, r]) => r.status !== "loading"));
@@ -104,6 +102,7 @@ function PlayerDetail({ player, objectives }: { player: DonePlayer; objectives: 
     { label: "Overall", breakdown: analysis.overall },
     ...objectives.map((o) => ({ label: o, breakdown: analysis.byObjective[o] })),
   ];
+  const seasonLabel = player.seasons.length > 1 ? `seasons ${Math.min(...player.seasons)}–${Math.max(...player.seasons)}` : player.seasons.length === 1 ? `season ${player.seasons[0]}` : "";
 
   return (
     <article class="sc-report">
@@ -111,8 +110,11 @@ function PlayerDetail({ player, objectives }: { player: DonePlayer; objectives: 
         <div>
           <h3>{player.player.name}</h3>
           <p class="sc-muted">
-            UID {player.player.uid} · {player.matches.length} match{player.matches.length === 1 ? "" : "es"} fetched · {analysis.overall.games} counted
+            UID {player.player.uid} · {player.matches.length} match{player.matches.length === 1 ? "" : "es"} fetched{seasonLabel && ` (${seasonLabel})`} ·{" "}
+            {analysis.overall.games} counted
             {rate !== null && ` · ${rate}% win rate`}
+            {analysis.skippedNoHero > 0 && ` · ${analysis.skippedNoHero} skipped (no hero recorded)`}
+            {player.player.candidates > 1 && ` · exact name match chosen from ${player.player.candidates} similar names`}
           </p>
         </div>
       </header>
@@ -198,15 +200,7 @@ function resolveIncludedModes(stored: number[] | null, found: GameModeInfo[]): S
   return new Set(defaults.length > 0 ? defaults : available);
 }
 
-function ResultsSummary({
-  usernames,
-  results,
-  mapLookup,
-}: {
-  usernames: string[];
-  results: Record<string, PlayerResult>;
-  mapLookup: MapLookup;
-}) {
+function ResultsSummary({ usernames, results }: { usernames: string[]; results: Record<string, PlayerResult> }) {
   const [storedModes, setStoredModes] = usePersistentState<number[] | null>(STORE.modes, () => null);
   const [selectedPlayers, setSelectedPlayers] = usePersistentState<string[]>(STORE.selected, () => []);
 
@@ -216,7 +210,7 @@ function ResultsSummary({
 
   const finished = usernames.flatMap((username) => {
     const r = results[username];
-    return r?.status === "done" ? [{ username, player: r.player, matches: r.matches }] : [];
+    return r?.status === "done" ? [{ username, player: r.player, matches: r.matches, seasons: r.seasons }] : [];
   });
   const pending = usernames.flatMap((username) => {
     const r = results[username];
@@ -226,7 +220,7 @@ function ResultsSummary({
   // Game modes present across everyone's raw history, before filtering.
   const modeTotals = new Map<number, GameModeInfo>();
   for (const p of finished) {
-    for (const m of analyzeMatches(p.matches, mapLookup, new Set()).gameModes) {
+    for (const m of analyzeMatches(p.matches, new Set()).gameModes) {
       const info = modeTotals.get(m.id) ?? { id: m.id, name: m.name, games: 0 };
       info.games += m.games;
       modeTotals.set(m.id, info);
@@ -242,7 +236,7 @@ function ResultsSummary({
     setStoredModes([...next]);
   }
 
-  const done: DonePlayer[] = finished.map((p) => ({ ...p, analysis: analyzeMatches(p.matches, mapLookup, included) }));
+  const done: DonePlayer[] = finished.map((p) => ({ ...p, analysis: analyzeMatches(p.matches, included) }));
   // Only show the "Other" column when someone actually has games there.
   const objectives = OBJECTIVES.filter((o) => o !== "Other" || done.some((p) => p.analysis.byObjective.Other.games > 0));
   const unknownMaps = new Set(done.flatMap((p) => p.analysis.unknownMapIds));
@@ -275,7 +269,7 @@ function ResultsSummary({
               {modesFound.map((m) => (
                 <label key={m.id} class="mr-mode">
                   <input type="checkbox" checked={included.has(m.id)} onChange={() => toggleMode(m.id)} />
-                  {gameModeName(m.id, m.name)}
+                  {gameModeName(m.id)}
                   <span class="mr-mode-count">
                     #{m.id} · {m.games}
                   </span>
@@ -322,8 +316,7 @@ function ResultsSummary({
 
           {unknownMaps.size > 0 && (
             <p class="mr-note">
-              {unknownMaps.size} map id{unknownMaps.size === 1 ? "" : "s"} could not be matched to a known map and counted under "Other":{" "}
-              {[...unknownMaps].join(", ")}.
+              {unknownMaps.size} map id{unknownMaps.size === 1 ? "" : "s"} not in the map list yet, counted under "Other": {[...unknownMaps].join(", ")}.
             </p>
           )}
 
@@ -339,11 +332,8 @@ function ResultsSummary({
 export function MrScraper() {
   const [players, setPlayers] = usePersistentState<string[]>(STORE.players, () => Array(MIN_PLAYER_SLOTS).fill(""));
   const [results, setResults] = usePersistentState<Record<string, PlayerResult>>(STORE.results, () => ({}), finishedOnly);
-  const [storedMaps, setStoredMaps] = usePersistentState<StoredMaps | null>(STORE.maps, () => null);
+  const [seasonsBack, setSeasonsBack] = usePersistentState<number>(STORE.seasonsBack, () => 0);
   const [running, setRunning] = useState(false);
-  const [mapsError, setMapsError] = useState<string | null>(null);
-
-  const mapLookup = buildMapLookup(storedMaps?.maps ?? []);
 
   function updatePlayer(index: number, value: string) {
     setPlayers((prev) => prev.map((p, i) => (i === index ? value : p)));
@@ -363,42 +353,28 @@ export function MrScraper() {
   const canRemove = players.length > MIN_PLAYER_SLOTS;
   const validNames = [...new Set(players.map((p) => p.trim()).filter((p) => USERNAME_PATTERN.test(p)))];
 
-  async function ensureMaps(onRateLimit: (s: number, a: number) => void): Promise<void> {
-    if (storedMaps && Date.now() - storedMaps.fetchedAt < MAPS_TTL_MS && storedMaps.maps.length > 0) return;
-    try {
-      const maps = await fetchMaps({ onRateLimit });
-      setStoredMaps({ fetchedAt: Date.now(), maps });
-      setMapsError(null);
-    } catch (err) {
-      // Not fatal: matches still tally, just without the objective split.
-      setMapsError(err instanceof Error ? err.message : "Could not load the map list.");
-    }
-  }
-
   async function analyze(e: Event) {
     e.preventDefault();
     if (running || validNames.length === 0) return;
     setRunning(true);
     setResults(Object.fromEntries(validNames.map((n) => [n, { status: "loading", message: "Queued…" }])));
 
-    const mapsRateLimit = (s: number, a: number) =>
-      setResults((prev) => ({ ...prev, [validNames[0]]: { status: "loading", message: `Rate limited while loading maps. Retrying in ${s}s (attempt ${a})…` } }));
-    await ensureMaps(mapsRateLimit);
-
-    // Players are processed one at a time to stay well inside the API rate limit.
+    // Players are processed one at a time to be gentle on the upstream site.
     for (const username of validNames) {
       const update = (r: PlayerResult) => setResults((prev) => ({ ...prev, [username]: r }));
       const onRateLimit = (secondsLeft: number, attempt: number) =>
-        update({ status: "loading", message: `Rate limited by the API. Retrying in ${secondsLeft}s (attempt ${attempt})…` });
+        update({ status: "loading", message: `Rate limited. Retrying in ${secondsLeft}s (attempt ${attempt})…` });
       try {
         update({ status: "loading", message: "Looking up player…" });
         const player = await findPlayer(username, { onRateLimit });
-        update({ status: "loading", message: "Fetching match history…" });
-        const matches = await fetchMatchHistory(player.uid, {
+        update({ status: "loading", message: `Fetching match history for ${player.name}…` });
+        const { matches, seasons } = await fetchRecentMatches(player.uid, {
+          seasonsBack,
           onRateLimit,
-          onPage: (fetched, total) => update({ status: "loading", message: `Fetched ${fetched}${total !== null ? ` of ${total}` : ""} matches…` }),
+          onSeason: (season, fetched) =>
+            update({ status: "loading", message: `Fetched ${fetched} matches${season !== null ? ` through season ${season}` : ""}…` }),
         });
-        update({ status: "done", player, matches });
+        update({ status: "done", player, matches, seasons });
       } catch (err) {
         const message = err instanceof ApiError || err instanceof Error ? err.message : "Something went wrong.";
         update({ status: "error", message });
@@ -416,7 +392,7 @@ export function MrScraper() {
 
       <section class="sc-panel">
         <h2>Hero tracker</h2>
-        <p class="sc-muted">Pulls each player's recent match history from MarvelRivalsAPI.com.</p>
+        <p class="sc-muted">Pulls each player's recent match history from rivalsmeta.com. Each season contributes the player's last 20 matches.</p>
 
         <form class="sc-form" onSubmit={analyze}>
           <p class="sc-muted">Enter Marvel Rivals usernames. Add more boxes for extra players.</p>
@@ -463,6 +439,20 @@ export function MrScraper() {
             <button type="button" class="sc-add" disabled={running} onClick={addPlayer}>
               + Add player
             </button>
+            <label class="mr-seasons">
+              <span>Earlier seasons</span>
+              <select
+                value={seasonsBack}
+                disabled={running}
+                onChange={(e) => setSeasonsBack(Number((e.currentTarget as HTMLSelectElement).value))}
+              >
+                {Array.from({ length: MAX_SEASONS_BACK + 1 }, (_, n) => (
+                  <option key={n} value={n}>
+                    {n === 0 ? "Current season only" : `+${n} season${n === 1 ? "" : "s"} back`}
+                  </option>
+                ))}
+              </select>
+            </label>
             <span class="sc-muted sc-count">
               {players.length} player{players.length === 1 ? "" : "s"}
             </span>
@@ -477,9 +467,7 @@ export function MrScraper() {
           </div>
         </form>
 
-        {mapsError && <p class="mr-note">Map list unavailable ({mapsError}); matches are tallied without the objective split.</p>}
-
-        {validNames.some((n) => results[n]) && <ResultsSummary usernames={validNames} results={results} mapLookup={mapLookup} />}
+        {validNames.some((n) => results[n]) && <ResultsSummary usernames={validNames} results={results} />}
       </section>
     </main>
   );

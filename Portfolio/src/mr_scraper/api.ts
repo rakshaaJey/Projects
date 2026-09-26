@@ -1,8 +1,12 @@
-// Thin client for MarvelRivalsAPI.com.
+// Client for the JSON API behind rivalsmeta.com (the same API also serves
+// rivalstracker.com at https://api.rivalstracker.com/api). It needs no API key.
 //
-// Requests go through `/api/mr/*`, which is proxied to
-// https://marvelrivalsapi.com/api/* with the `x-api-key` header attached
-// server-side (see vite.config.ts for dev/preview and functions/api/mr for production).
+// Requests go through `/api/mr/*`, which is proxied to https://rivalsmeta.com/api
+// (see vite.config.ts for dev/preview and functions/api/mr for production).
+//
+// Endpoints used (undocumented, observed from the site itself):
+//   POST /find-player            body {"name": "..."}   -> [{aid, name, cur_head_icon_id}, ...]
+//   GET  /player/{aid}?season=N  (no season = current)  -> profile + last 20 matches of that season
 
 import { ApiError, requestJson, type RequestOptions } from "../shared/http.ts";
 
@@ -11,129 +15,129 @@ export type { RequestOptions };
 
 export const MR_PROXY_BASE = "/api/mr";
 
-export type MrPlayer = { uid: string; name: string };
-
-export type MrHero = {
-  hero_id: number;
-  hero_name: string;
-  hero_type?: string;
-  play_time?: number | string;
-  kills?: number;
-  deaths?: number;
-  assists?: number;
+export type MrPlayer = {
+  uid: string;
+  name: string;
+  /** How many players the name search returned; >1 means the exact match was picked from a list. */
+  candidates: number;
 };
 
-/** One entry of the player's match history (v2). Only the fields we read. */
+/** One entry of `match_history`. Only the fields we read. */
 export type MrMatch = {
   match_uid: string;
   match_map_id: number;
-  match_season?: string | number;
+  match_season: string;
   match_time_stamp: number; // Unix seconds
-  play_mode_id?: number;
+  play_mode_id: number;
   game_mode_id: number;
-  game_mode_name?: string;
   match_winner_side?: number;
   match_player: {
-    player_uid?: string | number;
-    kills?: number;
-    deaths?: number;
-    assists?: number;
-    // v1 nests the flag in an object; v2 may send a plain boolean.
-    is_win?: boolean | { is_win?: boolean; score?: number };
-    camp?: number | string;
-    player_hero?: MrHero;
-    player_heroes?: MrHero[];
+    player_uid?: number;
+    k?: number;
+    d?: number;
+    a?: number;
+    is_win?: number | boolean | { is_win?: boolean };
+    camp?: number;
+    player_hero?: { hero_id: number };
   };
 };
 
-export type MrMap = {
-  id: number;
-  name: string;
-  full_name?: string;
-  location?: string;
-  game_mode?: string; // "Domination" | "Convoy" | "Convergence" | ...
-  is_competitve?: boolean;
+export type MrPlayerSeason = {
+  player?: { _id?: number; info?: { name?: string; rank_game_season?: Record<string, string> } };
+  stats?: { total_matches?: number; ranked_matches?: number; unranked_matches?: number };
+  match_history?: MrMatch[];
 };
 
-// Friendly text for statuses this API is known to return.
 const FRIENDLY: Record<number, string> = {
-  401: "The API key is missing or invalid. Locally, set MARVELRIVALS_API_KEY in .env and restart the dev server; in production, set it in the Cloudflare project's variables and redeploy.",
-  404: "Player not found. Check the username.",
-  500: "The server-side API key is not configured. Set MARVELRIVALS_API_KEY in the Cloudflare project's variables and redeploy.",
-  502: "MarvelRivalsAPI.com is not responding right now. Try again in a few minutes.",
+  404: "Player not found.",
+  502: "The stats site is not responding right now. Try again in a few minutes.",
+  503: "The stats site is not responding right now. Try again in a few minutes.",
 };
 
 const extractError = (body: unknown): string | undefined => {
   if (!body || typeof body !== "object") return undefined;
-  const b = body as { message?: unknown; error?: unknown; errors?: { message?: unknown }[] };
-  const candidate = b.message ?? b.error ?? b.errors?.[0]?.message;
+  const b = body as { message?: unknown; error?: unknown };
+  const candidate = b.message ?? b.error;
   return typeof candidate === "string" ? candidate : undefined;
 };
 
-async function get<T>(path: string, options: RequestOptions = {}): Promise<T> {
-  const { body } = await requestJson<T>(`${MR_PROXY_BASE}${path}`, { ...options, friendly: FRIENDLY, extractError });
+type FindPlayerHit = { aid: string | number; name: string };
+
+/** Resolves a username to a player id, preferring an exact (case-insensitive) name match. */
+export async function findPlayer(username: string, options: RequestOptions = {}): Promise<MrPlayer> {
+  const { body } = await requestJson<FindPlayerHit[] | { players?: FindPlayerHit[] }>(`${MR_PROXY_BASE}/find-player`, {
+    ...options,
+    method: "POST",
+    json: { name: username },
+    friendly: FRIENDLY,
+    extractError,
+  });
+  const hits = Array.isArray(body) ? body : (body?.players ?? []);
+  if (hits.length === 0) throw new ApiError(`No player named "${username}" was found.`, 404);
+  const wanted = username.trim().toLowerCase();
+  const hit = hits.find((h) => h.name?.trim().toLowerCase() === wanted) ?? hits[0];
+  return { uid: String(hit.aid), name: hit.name ?? username, candidates: hits.length };
+}
+
+/** Fetches a player's profile for one season, including that season's last 20 matches. Omit `season` for the current one. */
+export async function fetchPlayerSeason(uid: string, season?: number, options: RequestOptions = {}): Promise<MrPlayerSeason> {
+  const query = season !== undefined ? `?season=${encodeURIComponent(String(season))}` : "";
+  const { body } = await requestJson<MrPlayerSeason>(`${MR_PROXY_BASE}/player/${encodeURIComponent(uid)}${query}`, {
+    ...options,
+    friendly: FRIENDLY,
+    extractError,
+  });
   return body;
 }
 
-export async function findPlayer(username: string, options: RequestOptions = {}): Promise<MrPlayer> {
-  const body = await get<{ uid?: string | number; name?: string; player?: { uid?: string | number; name?: string } }>(
-    `/v2/find-player/${encodeURIComponent(username)}`,
-    options,
-  );
-  const uid = body.uid ?? body.player?.uid;
-  const name = body.name ?? body.player?.name ?? username;
-  if (uid === undefined || uid === null || uid === "") throw new ApiError("Player not found. Check the username.", 404);
-  return { uid: String(uid), name };
+/** Works out which season a profile response describes. */
+export function seasonOf(profile: MrPlayerSeason): number | null {
+  const fromMatch = Number(profile.match_history?.[0]?.match_season);
+  if (Number.isFinite(fromMatch) && fromMatch > 0) return fromMatch;
+  // Fall back to the newest ranked season the account has an entry for.
+  let best: number | null = null;
+  for (const raw of Object.values(profile.player?.info?.rank_game_season ?? {})) {
+    try {
+      const id = Number((JSON.parse(raw) as { rank_game_id?: number }).rank_game_id);
+      if (Number.isFinite(id) && (best === null || id > best)) best = id;
+    } catch {
+      // ignore malformed entries
+    }
+  }
+  return best;
 }
-
-const PAGE_SIZE = 40;
 
 /**
- * Fetches the player's match history for the current season across every game
- * mode (`game_mode=0`), newest first, walking pages until the API reports no
- * more or `maxPages` is reached.
+ * Fetches the current season's matches plus `seasonsBack` earlier seasons
+ * (each season contributes up to 20 matches, newest first), de-duplicated.
  */
-export async function fetchMatchHistory(
+export async function fetchRecentMatches(
   uid: string,
-  options: RequestOptions & { maxPages?: number; season?: string; onPage?: (fetched: number, total: number | null) => void } = {},
-): Promise<MrMatch[]> {
-  const { maxPages = 5, season, onPage, ...requestOptions } = options;
+  options: RequestOptions & { seasonsBack?: number; onSeason?: (season: number | null, fetched: number) => void } = {},
+): Promise<{ matches: MrMatch[]; seasons: number[]; profile: MrPlayerSeason }> {
+  const { seasonsBack = 0, onSeason, ...requestOptions } = options;
+  const profile = await fetchPlayerSeason(uid, undefined, requestOptions);
   const matches: MrMatch[] = [];
   const seen = new Set<string>();
-  for (let page = 1; page <= maxPages; page++) {
-    const query = new URLSearchParams({ game_mode: "0", page: String(page), limit: String(PAGE_SIZE) });
-    if (season) query.set("season", season);
-    const body = await get<{
-      match_history?: MrMatch[];
-      matches?: MrMatch[];
-      pagination?: { has_more?: boolean; total_matches?: number; total_pages?: number };
-    }>(`/v2/player/${encodeURIComponent(uid)}/match-history?${query}`, requestOptions);
-    const batch = body.match_history ?? body.matches ?? [];
-    for (const m of batch) {
-      if (m?.match_uid && seen.has(m.match_uid)) continue;
-      if (m?.match_uid) seen.add(m.match_uid);
+  const add = (list: MrMatch[] | undefined) => {
+    for (const m of list ?? []) {
+      if (!m?.match_uid || seen.has(m.match_uid)) continue;
+      seen.add(m.match_uid);
       matches.push(m);
     }
-    const total = body.pagination?.total_matches ?? null;
-    onPage?.(matches.length, total);
-    const hasMore = body.pagination?.has_more ?? batch.length >= PAGE_SIZE;
-    if (!hasMore || batch.length === 0) break;
+  };
+  add(profile.match_history);
+  const current = seasonOf(profile);
+  const seasons: number[] = current !== null ? [current] : [];
+  onSeason?.(current, matches.length);
+  if (current !== null) {
+    for (let k = 1; k <= seasonsBack && current - k >= 1; k++) {
+      const season = current - k;
+      const earlier = await fetchPlayerSeason(uid, season, requestOptions);
+      add(earlier.match_history);
+      seasons.push(season);
+      onSeason?.(season, matches.length);
+    }
   }
-  return matches;
-}
-
-/** Fetches every map with its objective mode (Domination / Convoy / Convergence / ...). */
-export async function fetchMaps(options: RequestOptions = {}): Promise<MrMap[]> {
-  const maps: MrMap[] = [];
-  for (let page = 1; page <= 10; page++) {
-    const body = await get<{ maps?: MrMap[]; data?: MrMap[]; total_maps?: number; total_pages?: number }>(
-      `/v1/maps?page=${page}&limit=100`,
-      options,
-    );
-    const batch = body.maps ?? body.data ?? [];
-    maps.push(...batch);
-    const totalPages = body.total_pages ?? 1;
-    if (batch.length === 0 || page >= totalPages) break;
-  }
-  return maps;
+  return { matches, seasons, profile };
 }

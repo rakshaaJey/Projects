@@ -1,48 +1,49 @@
 // Cloudflare Pages Function: serves /api/mr/* in PRODUCTION (and preview
-// deployments) by proxying to MarvelRivalsAPI.com with the API key attached,
-// so the key never reaches the browser.
+// deployments) by proxying to rivalsmeta.com's JSON API, which needs no key.
+// Proxying keeps the page same-origin and lets the upstream be swapped
+// without a client change.
 //
-// Configuration comes from the Cloudflare project, not from `.env`:
-//   Workers & Pages -> <project> -> Settings -> Variables and Secrets
-//     MARVELRIVALS_API_KEY   (required; add as a Secret, for Production and/or Preview)
-//     MARVELRIVALS_API_BASE  (optional; defaults to https://marvelrivalsapi.com/api)
-// Variables apply to the next deployment, so redeploy after adding them.
+// Optional configuration (Workers & Pages -> <project> -> Settings -> Variables and Secrets):
+//   MARVELRIVALS_API_BASE  (defaults to https://rivalsmeta.com/api;
+//                           https://api.rivalstracker.com/api serves the same data)
 //
-// Locally, the equivalent proxy lives in vite.config.ts and reads `.env`.
+// Locally, the equivalent proxy lives in vite.config.ts.
 
 type PagesContext = {
   request: Request;
-  env: { MARVELRIVALS_API_KEY?: string; MARVELRIVALS_API_BASE?: string };
+  env: { MARVELRIVALS_API_BASE?: string };
   params: { path?: string | string[] };
 };
 
-const DEFAULT_UPSTREAM = "https://marvelrivalsapi.com/api";
+const DEFAULT_UPSTREAM = "https://rivalsmeta.com/api";
 
-const jsonError = (status: number, message: string) => Response.json({ message, status }, { status });
+// Browser-like headers: the upstream is a public website API, not a documented service.
+const USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0 Safari/537.36";
 
-export const onRequestGet = async ({ request, env, params }: PagesContext): Promise<Response> => {
-  const key = env.MARVELRIVALS_API_KEY?.trim();
-  if (!key) {
-    return jsonError(
-      500,
-      "MARVELRIVALS_API_KEY is not configured for this deployment. Add it under the Cloudflare Pages project's Settings -> Variables and Secrets, then redeploy.",
-    );
-  }
-
+async function proxy({ request, env, params }: PagesContext): Promise<Response> {
   const segments = Array.isArray(params.path) ? params.path : params.path ? [params.path] : [];
   const incoming = new URL(request.url);
   const base = (env.MARVELRIVALS_API_BASE?.trim() || DEFAULT_UPSTREAM).replace(/\/+$/, "");
   const upstream = new URL(`${base}/${segments.map(encodeURIComponent).join("/")}`);
   upstream.search = incoming.search;
 
+  const headers: Record<string, string> = { Accept: "application/json", "User-Agent": USER_AGENT };
+  const contentType = request.headers.get("Content-Type");
+  if (contentType) headers["Content-Type"] = contentType;
+
   const res = await fetch(upstream.toString(), {
-    headers: { "x-api-key": key, Accept: "application/json" },
+    method: request.method,
+    headers,
+    body: request.method === "GET" || request.method === "HEAD" ? undefined : await request.text(),
   });
 
-  const headers = new Headers({ "Content-Type": res.headers.get("Content-Type") ?? "application/json" });
+  const out = new Headers({ "Content-Type": res.headers.get("Content-Type") ?? "application/json" });
   for (const h of ["X-RateLimit-Limit", "X-RateLimit-Remaining", "X-RateLimit-Reset", "Retry-After"]) {
     const v = res.headers.get(h);
-    if (v) headers.set(h, v);
+    if (v) out.set(h, v);
   }
-  return new Response(res.body, { status: res.status, headers });
-};
+  return new Response(res.body, { status: res.status, headers: out });
+}
+
+export const onRequestGet = proxy;
+export const onRequestPost = proxy;

@@ -18,6 +18,10 @@ export type RequestOptions = {
 };
 
 type JsonRequestConfig = RequestOptions & {
+  /** HTTP method; defaults to GET. */
+  method?: "GET" | "POST";
+  /** JSON body to send (sets Content-Type: application/json). */
+  json?: unknown;
   /** Status code -> message shown when the body carries no message of its own. */
   friendly?: Record<number, string>;
   /** Pulls an error message out of a non-2xx JSON body, if the API provides one. */
@@ -72,10 +76,12 @@ async function waitOutRateLimit(res: Response, attempt: number, options: Request
   }
 }
 
-/** GETs `url`, retrying on 429, and returns the parsed JSON body with its status. */
+/** Requests `url` (GET by default), retrying on 429, and returns the parsed JSON body with its status. */
 export async function requestJson<T>(url: string, config: JsonRequestConfig = {}): Promise<{ status: number; body: T }> {
-  const { signal, friendly = {}, extractError } = config;
-  const init: RequestInit = { signal, headers: { Accept: "application/json" } };
+  const { signal, friendly = {}, extractError, method = "GET", json } = config;
+  const headers: Record<string, string> = { Accept: "application/json" };
+  if (json !== undefined) headers["Content-Type"] = "application/json";
+  const init: RequestInit = { method, signal, headers, body: json !== undefined ? JSON.stringify(json) : undefined };
   let res = await fetch(url, init);
   for (let attempt = 1; res.status === 429 && attempt <= RATE_LIMIT_MAX_RETRIES; attempt++) {
     await waitOutRateLimit(res, attempt, config);

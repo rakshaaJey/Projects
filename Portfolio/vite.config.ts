@@ -38,28 +38,26 @@ function trailingSlashRedirect(): Plugin {
 // keys from the Cloudflare project's variables.
 type UpstreamProxy = {
   route: string // local path prefix, e.g. /api/henrik
-  keyVar: string // env var holding the API key
   baseVar: string // env var that can override the upstream base URL
   defaultBase: string
-  header: string // request header that carries the key
   page: string // which page uses it (for the warning message)
+  /** Set when the upstream needs an API key: the env var holding it and the header it goes in. */
+  key?: { envVar: string; header: string }
 }
 
 const upstreams: UpstreamProxy[] = [
   {
     route: '/api/henrik',
-    keyVar: 'HENRIKDEV_API_KEY',
     baseVar: 'HENRIKDEV_API_BASE',
     defaultBase: 'https://api.henrikdev.xyz',
-    header: 'Authorization',
     page: 'val_scraper',
+    key: { envVar: 'HENRIKDEV_API_KEY', header: 'Authorization' },
   },
   {
+    // rivalsmeta.com's own JSON API; no key needed. https://api.rivalstracker.com/api serves the same data.
     route: '/api/mr',
-    keyVar: 'MARVELRIVALS_API_KEY',
     baseVar: 'MARVELRIVALS_API_BASE',
-    defaultBase: 'https://marvelrivalsapi.com/api',
-    header: 'x-api-key',
+    defaultBase: 'https://rivalsmeta.com/api',
     page: 'mr_scraper',
   },
 ]
@@ -68,9 +66,9 @@ function apiProxies(env: Record<string, string>): Record<string, ProxyOptions> {
   const proxy: Record<string, ProxyOptions> = {}
   for (const u of upstreams) {
     const target = (env[u.baseVar] || u.defaultBase).replace(/\/+$/, '')
-    const key = env[u.keyVar]
-    if (!key) {
-      console.warn(`[${u.page}] ${u.keyVar} is not set in .env; ${u.route} requests will be rejected upstream. See .env.example.`)
+    const key = u.key ? env[u.key.envVar] : undefined
+    if (u.key && !key) {
+      console.warn(`[${u.page}] ${u.key.envVar} is not set in .env; ${u.route} requests will be rejected upstream. See .env.example.`)
     }
     // The upstream base may carry a path prefix (e.g. ".../api"), so proxy to
     // its origin and prepend that prefix to the path after the local route.
@@ -80,7 +78,7 @@ function apiProxies(env: Record<string, string>): Record<string, ProxyOptions> {
       target: targetUrl.origin,
       changeOrigin: true,
       rewrite: (path) => basePath + path.replace(new RegExp(`^${u.route}`), ''),
-      headers: key ? { [u.header]: key } : {},
+      headers: u.key && key ? { [u.key.header]: key } : {},
     }
   }
   return proxy
