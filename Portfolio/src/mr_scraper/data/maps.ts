@@ -116,6 +116,9 @@ export const MAPS: Record<number, MapEntry> = {
   1429: { mode: "PATH TO DOOMSDAY: THE AVENGERS", map: "HELLFIRE GALA", playMode: "QuickMatch", subMapId: 0 },
   1434: { mode: "CONVOY", map: "THEBES", playMode: "Competition", subMapId: 0 },
   1435: { mode: "AVENGERS: AGE OF ULTRON", map: "PATH TO DOOMSDAY", playMode: "QuickMatch", subMapId: 0 },
+  // Not in the site dictionaries as of 2026-09-28. Seen in live ranked history from 2026-09-24 with a
+  // 2-0 round score (Domination shape); the only map added in Season 10 (Sept 2026) is The God Quarry, Domination.
+  1440: { mode: "DOMINATION", map: "THE GOD QUARRY", playMode: "Competition", subMapId: 0 },
   2041: { mode: "CONVERGENCE", map: "K'UN-LUN", playMode: "QuickMatch", subMapId: 0 },
   2042: { mode: "CONVERGENCE", map: "K'UN-LUN", playMode: "Competition", subMapId: 0 },
   2081: { mode: "DOOM MATCH", map: "ALCHEMAX HEADQUARTERS", playMode: "CivilWarFlexibleRespawn", subMapId: 0 },

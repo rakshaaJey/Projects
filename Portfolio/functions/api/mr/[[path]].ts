@@ -4,14 +4,14 @@
 // without a client change.
 //
 // Optional configuration (Workers & Pages -> <project> -> Settings -> Variables and Secrets):
-//   MARVELRIVALS_API_BASE  (defaults to https://rivalsmeta.com/api;
-//                           https://api.rivalstracker.com/api serves the same data)
+//   RIVALSMETA_API_BASE  (defaults to https://rivalsmeta.com/api;
+//                         https://api.rivalstracker.com/api serves the same data)
 //
 // Locally, the equivalent proxy lives in vite.config.ts.
 
 type PagesContext = {
   request: Request;
-  env: { MARVELRIVALS_API_BASE?: string };
+  env: { RIVALSMETA_API_BASE?: string };
   params: { path?: string | string[] };
 };
 
@@ -23,7 +23,7 @@ const USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36
 async function proxy({ request, env, params }: PagesContext): Promise<Response> {
   const segments = Array.isArray(params.path) ? params.path : params.path ? [params.path] : [];
   const incoming = new URL(request.url);
-  const base = (env.MARVELRIVALS_API_BASE?.trim() || DEFAULT_UPSTREAM).replace(/\/+$/, "");
+  const base = (env.RIVALSMETA_API_BASE?.trim() || DEFAULT_UPSTREAM).replace(/\/+$/, "");
   const upstream = new URL(`${base}/${segments.map(encodeURIComponent).join("/")}`);
   upstream.search = incoming.search;
 

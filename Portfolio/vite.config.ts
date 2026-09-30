@@ -54,9 +54,18 @@ const upstreams: UpstreamProxy[] = [
     key: { envVar: 'HENRIKDEV_API_KEY', header: 'Authorization' },
   },
   {
-    // rivalsmeta.com's own JSON API; no key needed. https://api.rivalstracker.com/api serves the same data.
-    route: '/api/mr',
+    // MarvelRivalsAPI.com (documented, keyed): the primary source for mr_scraper.
+    route: '/api/mra',
     baseVar: 'MARVELRIVALS_API_BASE',
+    defaultBase: 'https://marvelrivalsapi.com/api',
+    page: 'mr_scraper',
+    key: { envVar: 'MARVELRIVALS_API_KEY', header: 'x-api-key' },
+  },
+  {
+    // rivalsmeta.com's own JSON API; no key needed. mr_scraper falls back to it, and takes its
+    // hero meta (ban rates) from it. https://api.rivalstracker.com/api serves the same data.
+    route: '/api/mr',
+    baseVar: 'RIVALSMETA_API_BASE',
     defaultBase: 'https://rivalsmeta.com/api',
     page: 'mr_scraper',
   },
@@ -68,7 +77,7 @@ function apiProxies(env: Record<string, string>): Record<string, ProxyOptions> {
     const target = (env[u.baseVar] || u.defaultBase).replace(/\/+$/, '')
     const key = u.key ? env[u.key.envVar] : undefined
     if (u.key && !key) {
-      console.warn(`[${u.page}] ${u.key.envVar} is not set in .env; ${u.route} requests will be rejected upstream. See .env.example.`)
+      console.warn(`[${u.page}] ${u.key.envVar} is not set in .env; ${u.route} requests will be rejected upstream (the page falls back where it can). See .env.example.`)
     }
     // The upstream base may carry a path prefix (e.g. ".../api"), so proxy to
     // its origin and prepend that prefix to the path after the local route.

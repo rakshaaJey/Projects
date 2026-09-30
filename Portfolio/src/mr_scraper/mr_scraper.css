@@ -90,6 +90,337 @@
   border-color: var(--sc-accent);
 }
 
+/* Wrapping: the extra Rank column and badges make rows wider than the shared
+   stylesheet's no-wrap tables expect, so on this page text wraps inside its
+   cell instead of running past the panel. */
+
+.sc-summary th,
+.sc-summary td,
+.sc-detail th,
+.sc-detail td,
+.sc-table .sc-num,
+.sc-map,
+.sc-record,
+.mr-rank {
+  white-space: normal;
+}
+
+.sc-summary,
+.sc-detail {
+  table-layout: auto;
+  width: 100%;
+}
+
+.sc-summary .sc-player-cell {
+  min-width: 9rem;
+}
+
+.sc-player-button,
+.mr-rank-name,
+.sc-agent-name {
+  overflow-wrap: anywhere;
+}
+
+.sc-player-button {
+  text-align: left;
+  white-space: normal;
+}
+
+.sc-agents,
+.sc-recent {
+  flex-wrap: wrap;
+}
+
+/* The floating card on wide screens wraps too, capped so it never leaves the viewport. */
+.sc-hover-card {
+  white-space: normal;
+  max-width: min(360px, calc(100vw - 32px));
+}
+
+.sc-hover-list li {
+  flex-wrap: wrap;
+}
+
+/* Rank indicator (current + peak) */
+
+.mr-ranks {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.85rem;
+}
+
+.mr-rank-cell {
+  vertical-align: top;
+}
+
+.mr-rank-row {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.mr-rank-label,
+.mr-rank-season {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--sc-muted);
+  min-width: 2.6em;
+}
+
+.mr-rank-season {
+  min-width: 0;
+}
+
+.mr-rank {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.mr-rank-name {
+  font-weight: 700;
+  color: var(--mr-tier, var(--sc-fg));
+}
+
+.mr-rank-score {
+  font-size: 0.75rem;
+  color: var(--sc-muted);
+}
+
+.mr-rank.is-unranked .mr-rank-name {
+  font-weight: 400;
+  color: var(--sc-muted);
+}
+
+/* Tier colours follow the in-game rank icons. */
+.mr-rank.is-bronze { --mr-tier: #c98a4b; }
+.mr-rank.is-silver { --mr-tier: #b9c2cc; }
+.mr-rank.is-gold { --mr-tier: #f0c34a; }
+.mr-rank.is-platinum { --mr-tier: #7fd8d0; }
+.mr-rank.is-diamond { --mr-tier: #7cb6ff; }
+.mr-rank.is-grandmaster { --mr-tier: #d07cff; }
+.mr-rank.is-celestial { --mr-tier: #ff8a5c; }
+.mr-rank.is-eternity { --mr-tier: #ffd166; }
+.mr-rank.is-one-above-all { --mr-tier: #ffffff; }
+
+.mr-rank-line {
+  margin: 4px 0 6px;
+}
+
+/* Suggested bans */
+
+.mr-bans {
+  margin: 20px 0 8px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgb(var(--sc-muted-rgb) / 0.5);
+}
+
+.mr-ban-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mr-ban-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 16px;
+  border: 1px solid var(--sc-muted);
+  border-top: 3px solid var(--sc-accent);
+}
+
+.mr-ban-card.is-meta-only {
+  border-top-style: dashed;
+}
+
+.mr-ban-head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.mr-ban-index {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--sc-accent);
+}
+
+.mr-ban-hero {
+  font-size: 1.15rem;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.mr-ban-why {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 0.85rem;
+}
+
+.mr-ban-why .mr-one-trick {
+  margin-top: 0;
+}
+
+.mr-ban-players {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.85rem;
+}
+
+.mr-ban-players li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.mr-ban-players li.is-one-trick .mr-ban-player {
+  color: var(--sc-accent);
+  font-weight: 700;
+}
+
+.mr-ban-player {
+  overflow-wrap: anywhere;
+}
+
+.mr-ban-share {
+  white-space: nowrap;
+  color: var(--sc-muted);
+}
+
+.mr-ban-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  margin: auto 0 0;
+  padding-top: 8px;
+  border-top: 1px solid rgb(var(--sc-muted-rgb) / 0.5);
+  font-size: 0.8rem;
+  color: var(--sc-muted);
+}
+
+/* Role badge */
+
+.mr-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.mr-badges .mr-one-trick {
+  margin-top: 0;
+}
+
+.mr-role {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  padding: 2px 7px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 1.4;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  color: var(--mr-role, var(--sc-fg));
+  border: 1px solid var(--mr-role, var(--sc-muted));
+  vertical-align: middle;
+}
+
+.mr-role-share {
+  font-weight: 400;
+  opacity: 0.85;
+}
+
+.mr-role.is-tank { --mr-role: #7cb6ff; }
+.mr-role.is-dps { --mr-role: #ff7a7a; }
+.mr-role.is-support { --mr-role: #7fe0a0; }
+.mr-role.is-flex { --mr-role: #d07cff; }
+
+.sc-report-header h3 .mr-role {
+  font-size: 0.65rem;
+}
+
+/* Per-player "count in bans" toggle */
+
+.mr-ban-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 6px;
+  font-size: 0.75rem;
+  color: var(--sc-muted);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.mr-ban-toggle input {
+  accent-color: var(--sc-accent);
+  margin: 0;
+}
+
+/* One-trick highlight */
+
+.mr-one-trick {
+  display: inline-block;
+  margin-top: 6px;
+  padding: 3px 10px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 1.4;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  color: var(--sc-bg);
+  background: var(--sc-accent);
+  vertical-align: middle;
+}
+
+.sc-summary .sc-player-cell .mr-one-trick {
+  margin-top: 0;
+}
+
+.sc-summary tr.is-one-trick th,
+.sc-summary tr.is-one-trick td {
+  background: rgb(245 197 24 / 0.08);
+}
+
+/* Every player cell keeps a small gutter so the one-trick bar below sits beside the content, not over it. */
+.sc-summary .sc-player-cell {
+  padding-left: 12px;
+}
+
+.sc-summary tr.is-one-trick th {
+  box-shadow: inset 4px 0 0 var(--sc-accent);
+}
+
+.sc-report-header h3 {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+}
+
+.sc-report-header h3 .mr-one-trick {
+  margin-top: 0;
+  font-size: 0.65rem;
+}
+
 .mr-note {
   margin: 10px 0 0;
   font-size: 0.85rem;
