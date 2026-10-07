@@ -43,8 +43,9 @@ export type { RequestOptions };
 export const RD_PROXY_BASE = "/api/rd";
 export const MR_PROXY_BASE = "/api/mr";
 
-/** The upstreams, named as the page shows them. */
+/** The upstreams. Messages shown to the user or in the debug log never name them; they say "primary" and "fallback". */
 export type Source = "rivalsdata.com" | "rivalsmeta.com";
+const SOURCE_LABEL: Record<Source, string> = { "rivalsdata.com": "primary source", "rivalsmeta.com": "fallback source" };
 
 export type MrPlayer = {
   uid: string;
@@ -180,20 +181,20 @@ export type MrHeroStats = {
 
 const FRIENDLY_RD: Record<number, string> = {
   // The host is behind Cloudflare; a 403 with an HTML body is its bot check turning the proxy away.
-  403: "rivalsdata.com is refusing requests from this server right now (Cloudflare check).",
-  404: "Player not found on rivalsdata.com.",
-  502: "rivalsdata.com is not responding right now.",
-  503: "rivalsdata.com is not responding right now.",
-  504: "rivalsdata.com is not responding right now.",
+  403: "The primary stats source is refusing requests from this server right now (bot check).",
+  404: "Player not found on the primary stats source.",
+  502: "The primary stats source is not responding right now.",
+  503: "The primary stats source is not responding right now.",
+  504: "The primary stats source is not responding right now.",
 };
 
 const FRIENDLY_MR: Record<number, string> = {
   // rivalsmeta.com's API answers a bare 400 "error" to every request, from any address, during its outages,
   // which last a few minutes at a time (observed 2026-09-28/29). mrRequest retries before giving up.
-  400: "rivalsmeta.com's API is not answering right now (it goes down for a few minutes at a time). Retried for 3 minutes without luck; try again shortly.",
-  404: "Player not found on rivalsmeta.com.",
-  502: "rivalsmeta.com is not responding right now. Try again in a few minutes.",
-  503: "rivalsmeta.com is not responding right now. Try again in a few minutes.",
+  400: "The fallback stats source is not answering right now (it goes down for a few minutes at a time). Retried for 3 minutes without luck; try again shortly.",
+  404: "Player not found on the fallback stats source.",
+  502: "The fallback stats source is not responding right now. Try again in a few minutes.",
+  503: "The fallback stats source is not responding right now. Try again in a few minutes.",
 };
 
 const extractError = (body: unknown): string | undefined => {
@@ -290,7 +291,7 @@ function sleep(ms: number, signal?: AbortSignal): Promise<void> {
 
 /** Counts down `ms`, reporting the seconds left once a second through onRateLimit. */
 async function countdown(ms: number, attempt: number, options: RequestOptions): Promise<void> {
-  debugLog(`… rivalsmeta is in one of its outages; waiting ${Math.round(ms / 1000)}s before retry ${attempt} of ${THROTTLE_RETRY_WAITS_MS.length}`);
+  debugLog(`… fallback is in one of its outages; waiting ${Math.round(ms / 1000)}s before retry ${attempt} of ${THROTTLE_RETRY_WAITS_MS.length}`);
   const deadline = Date.now() + ms;
   while (true) {
     const left = Math.ceil((deadline - Date.now()) / 1000);
@@ -352,13 +353,13 @@ async function rdRequest<T>(path: string, config: JsonConfig = {}): Promise<T> {
   for (let attempt = 0; ; attempt++) {
     await spaceOut(config.signal);
     const started = Date.now();
-    debugLog(`→ rivalsdata ${config.method ?? "GET"} ${path}${brief(config.json)}${attempt ? ` (retry ${attempt})` : ""}`);
+    debugLog(`→ primary ${config.method ?? "GET"} ${path}${brief(config.json)}${attempt ? ` (retry ${attempt})` : ""}`);
     try {
       const { status, body } = await requestJson<T>(`${RD_PROXY_BASE}${path}`, { ...config, friendly: FRIENDLY_RD, extractError });
-      debugLog(`← rivalsdata ${status} in ${Date.now() - started} ms`);
+      debugLog(`← primary ${status} in ${Date.now() - started} ms`);
       return body;
     } catch (err) {
-      debugLog(`✗ rivalsdata ${statusOf(err)} after ${Date.now() - started} ms: ${describe(err)}`);
+      debugLog(`✗ primary ${statusOf(err)} after ${Date.now() - started} ms: ${describe(err)}`);
       const flaky = err instanceof ApiError && err.status >= 502 && err.status <= 504;
       if (!flaky || attempt >= 1) throw err;
       debugLog(`… passing 5xx; waiting ${RD_RETRY_WAIT_MS / 1000}s and retrying once`);
@@ -372,13 +373,13 @@ async function mrRequest<T>(path: string, config: JsonConfig = {}): Promise<T> {
   for (let attempt = 0; ; attempt++) {
     await spaceOut(config.signal);
     const started = Date.now();
-    debugLog(`→ rivalsmeta ${config.method ?? "GET"} ${path}${brief(config.json)}${attempt ? ` (retry ${attempt})` : ""}`);
+    debugLog(`→ fallback ${config.method ?? "GET"} ${path}${brief(config.json)}${attempt ? ` (retry ${attempt})` : ""}`);
     try {
       const { status, body } = await requestJson<T>(`${MR_PROXY_BASE}${path}`, { ...config, friendly: FRIENDLY_MR, extractError });
-      debugLog(`← rivalsmeta ${status} in ${Date.now() - started} ms`);
+      debugLog(`← fallback ${status} in ${Date.now() - started} ms`);
       return body;
     } catch (err) {
-      debugLog(`✗ rivalsmeta ${statusOf(err)} after ${Date.now() - started} ms: ${describe(err)}`);
+      debugLog(`✗ fallback ${statusOf(err)} after ${Date.now() - started} ms: ${describe(err)}`);
       const throttled = err instanceof ApiError && err.status === 400;
       if (!throttled || attempt >= THROTTLE_RETRY_WAITS_MS.length) throw err;
       await countdown(THROTTLE_RETRY_WAITS_MS[attempt], attempt + 1, config);
@@ -416,8 +417,8 @@ async function firstWorking<T>(attempts: Attempt<T>[], label: string): Promise<T
   for (const { source, run } of attempts) {
     const down = sourceDown.get(source);
     if (down && Date.now() < down.until) {
-      failures.push(`${source}: ${down.reason}`);
-      debugLog(`${label}: skipping ${source}, benched for another ${Math.ceil((down.until - Date.now()) / 60000)} min (${down.reason})`);
+      failures.push(`${SOURCE_LABEL[source]}: ${down.reason}`);
+      debugLog(`${label}: skipping the ${SOURCE_LABEL[source]}, benched for another ${Math.ceil((down.until - Date.now()) / 60000)} min (${down.reason})`);
       continue;
     }
     try {
@@ -426,10 +427,10 @@ async function firstWorking<T>(attempts: Attempt<T>[], label: string): Promise<T
       if (isAbort(err)) throw err;
       noteFailure(source, err);
       last = err;
-      failures.push(`${source}: ${describe(err)}`);
+      failures.push(`${SOURCE_LABEL[source]}: ${describe(err)}`);
       // The page only shows the source that answered; leave a trace of why the earlier ones did not.
-      console.warn(`[mr_scraper] ${label}: ${source} failed, trying the next source. ${describe(err)}`);
-      debugLog(`${label}: ${source} failed${sourceDown.has(source) ? " and is benched for 10 min" : ""}; trying the next source`);
+      console.warn(`[mr_scraper] ${label}: ${SOURCE_LABEL[source]} failed, trying the next source. ${describe(err)}`);
+      debugLog(`${label}: ${SOURCE_LABEL[source]} failed${sourceDown.has(source) ? " and is benched for 10 min" : ""}; trying the next source`);
     }
   }
   if (last instanceof ApiError && last.status === 404) throw last;
@@ -454,7 +455,7 @@ async function findPlayerRd(username: string, options: RequestOptions): Promise<
   if (hits.length === 0) throw new ApiError(`No player named "${username}" was found.`, 404);
   const { hit, caseInsensitive } = pickExact(username, hits);
   const uid = rdUid(hit);
-  if (!uid) throw new ApiError(`rivalsdata.com returned an unreadable account id for "${username}".`, 502);
+  if (!uid) throw new ApiError(`The primary stats source returned an unreadable account id for "${username}".`, 502);
   return { uid, name: hit.name ?? username, candidates: hits.length, source: "rivalsdata.com", caseInsensitive };
 }
 
@@ -665,7 +666,7 @@ async function fetchRdSeasonMatches(uid: string, season: number | undefined, opt
       if (!isRdPrivate(err) || path !== "/player/matches") throw err;
       historyPrivate = true;
       path = "/player/matches/cached";
-      debugLog("rivalsdata refused the live history as private; reading what it cached before");
+      debugLog("primary refused the live history as private; reading what it cached before");
       body = await fetchRdHistoryPage(path, uid, season, cursor, options);
     }
     const batch = (body.matches ?? []).map(normalizeRdMatch).filter((m): m is MrMatch => m !== null);
@@ -739,7 +740,7 @@ function rdBracket(bracket: MetaBracket): { rank: string; label: string } {
 async function fetchHeroStatsRd(bracket: MetaBracket, options: RequestOptions): Promise<MrHeroStats> {
   const { rank, label } = rdBracket(bracket);
   const body = await rdRequest<{ last_update?: number; heroes?: RdTierHero[] }>(`/stats/tierlist?rank=${encodeURIComponent(rank)}`, options);
-  if (!body.heroes?.length) throw new ApiError("rivalsdata.com returned an empty tier list.", 502);
+  if (!body.heroes?.length) throw new ApiError("The primary stats source returned an empty tier list.", 502);
   // Keep only what the ban recommender reads.
   const heroes = body.heroes.map(({ hero_id, picks, bans, total_games, winrate, winrate_no_mirror, pick_rate, ban_rate }) => ({
     hero_id,
