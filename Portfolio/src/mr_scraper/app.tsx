@@ -918,7 +918,7 @@ export function MrScraper() {
           });
           continue;
         }
-        debugLog(`${name || player.name}: done, ${matches.length} matches over ${seasons.length} season${seasons.length === 1 ? "" : "s"} via ${source}`);
+        debugLog(`${name || player.name}: done, ${matches.length} matches over ${seasons.length} season${seasons.length === 1 ? "" : "s"} via the ${source === "rivalsdata.com" ? "primary" : "fallback"} source`);
         update({ status: "done", player: { ...player, name: name || player.name, source }, matches, seasons, rank, historyPrivate });
       } catch (err) {
         if (signal.aborted) {
@@ -961,9 +961,9 @@ export function MrScraper() {
               const removes = players.length > MIN_PLAYER_SLOTS;
               return (
                 <div class={`sc-field has-remove ${status ? `is-${status}` : ""}`} key={inputId}>
-                  <label for={inputId}>Player {i + 1}</label>
                   <input
                     id={inputId}
+                    aria-label={`Player ${i + 1}`}
                     type="text"
                     class={`sc-input ${invalid ? "is-invalid" : ""}`}
                     placeholder="Name or UID"

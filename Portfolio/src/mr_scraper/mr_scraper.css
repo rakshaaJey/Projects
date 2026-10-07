@@ -137,21 +137,40 @@
   gap: 8px;
 }
 
+/* (margin-top is set in the .mr-search rules below: auto, so the bar sits at the bottom of the sidebar) */
 .mr-sidebar .sc-form-actions {
   gap: 10px;
-  margin-top: 12px;
 }
 
-/* In the narrow sidebar each label sits above its field, with the × on the right; while the form is at
-   its minimum size the × empties the row instead of removing it. */
+/* Compact rows in the narrow sidebar: just the box and its × (the row's label is the input's aria-label);
+   while the form is at its minimum size the × empties the row instead of removing it. */
 .mr-sidebar .sc-field {
   grid-template-columns: 1fr auto;
-  gap: 4px 8px;
+  gap: 6px;
 }
 
-.mr-sidebar .sc-field label {
-  grid-column: 1 / -1;
-  font-size: 0.7rem;
+.mr-sidebar .sc-fields {
+  gap: 6px;
+}
+
+.mr-sidebar .sc-input {
+  padding: 6px 10px;
+  font-size: 0.9rem;
+}
+
+.mr-sidebar .sc-form-actions .sc-add,
+.mr-sidebar .sc-form-actions .sc-clear {
+  padding: 7px 10px;
+  font-size: 0.8rem;
+}
+
+.mr-sidebar .mr-seasons {
+  font-size: 0.75rem;
+}
+
+.mr-sidebar .mr-seasons select {
+  padding: 5px 8px;
+  font-size: 0.85rem;
 }
 
 .mr-sidebar .sc-field-note {
@@ -168,8 +187,9 @@
 }
 
 .mr-sidebar .sc-remove {
-  width: 38px;
-  height: 38px;
+  width: 32px;
+  height: 32px;
+  font-size: 1rem;
 }
 
 /* A run's progress is shown on the name fields themselves: a sweeping highlight while a player is
