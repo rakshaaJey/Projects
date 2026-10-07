@@ -9,7 +9,10 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@pkmn/dex": "^0.10.11",
+    "@pkmn/sets": "^5.2.0",
     "dotenv": "^17.4.2",
+    "openai": "^7.25.0",
     "preact": "^10.29.1"
   },
   "devDependencies": {
