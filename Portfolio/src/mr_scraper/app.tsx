@@ -1,6 +1,20 @@
-import { useEffect, useMemo, useState } from "preact/hooks";
-import { ApiError, fetchRecentMatches, findPlayer, loadHeroStats, type MrHeroStats, type MrMatch, type MrPlayer } from "./api.ts";
-import { bracketFor, heroMeta, pct, recommendBans, type BanSuggestion, type MetaBracket } from "./bans.ts";
+import { useEffect, useMemo, useRef, useState } from "preact/hooks";
+import {
+  ApiError,
+  clearDebugLog,
+  debugLog,
+  fetchRecentMatches,
+  findPlayer,
+  loadHeroStats,
+  subscribeDebug,
+  type DebugEntry,
+  type MrHeroStats,
+  type MrMatch,
+  type MrPlayer,
+} from "./api.ts";
+import { bracketFor, heroMeta, metaFactor, pct, recommendBans, type BanSuggestion, type MetaBracket } from "./bans.ts";
+import { heroPortrait } from "./data/portraits.ts";
+import { rankBadge } from "./data/ranks.ts";
 import {
   analyzeMatches,
   DEFAULT_GAME_MODES,
@@ -32,6 +46,7 @@ const STORE = {
   seasonsBack: "mr_scraper:seasonsBack.v1",
   modes: "mr_scraper:modes.v1",
   selected: "mr_scraper:selected.v1",
+  debug: "mr_scraper:debug.v1",
 } as const;
 
 // The form always shows at least this many player inputs (a full team).
@@ -43,7 +58,7 @@ const padPlayers = (list: string[]) => (list.length >= MIN_PLAYER_SLOTS ? list :
 // Marvel Rivals usernames: 2-20 visible characters (a numeric UID also fits).
 const USERNAME_PATTERN = /^\S.{0,18}\S$/;
 
-// Each season adds up to 120 matches (MarvelRivalsAPI.com) or 20 (rivalsmeta.com); cap how far back the page will look.
+// Each season adds up to 120 matches (rivalsdata.com) or 20 (rivalsmeta.com); cap how far back the page will look.
 const MAX_SEASONS_BACK = 5;
 
 const RESULT_LABEL = { win: "W", loss: "L", draw: "D" } as const;
@@ -52,9 +67,18 @@ const RESULT_LABEL = { win: "W", loss: "L", draw: "D" } as const;
 type PlayerResult =
   | { status: "loading"; message: string }
   | { status: "error"; message: string }
-  | { status: "done"; player: MrPlayer; matches: MrMatch[]; seasons: number[]; rank?: RankSummary };
+  | { status: "done"; player: MrPlayer; matches: MrMatch[]; seasons: number[]; rank?: RankSummary; historyPrivate?: boolean };
 
-type DonePlayer = { username: string; player: MrPlayer; matches: MrMatch[]; seasons: number[]; rank?: RankSummary; analysis: PlayerAnalysis };
+type DonePlayer = {
+  username: string;
+  player: MrPlayer;
+  matches: MrMatch[];
+  seasons: number[];
+  rank?: RankSummary;
+  /** The player hides their history in-game; the matches were indexed by the source before that and may be stale. */
+  historyPrivate?: boolean;
+  analysis: PlayerAnalysis;
+};
 
 function finishedOnly(results: Record<string, PlayerResult>): Record<string, PlayerResult> {
   return Object.fromEntries(Object.entries(results).filter(([, r]) => r.status !== "loading"));
@@ -62,24 +86,71 @@ function finishedOnly(results: Record<string, PlayerResult>): Record<string, Pla
 
 const formatDate = (unixSeconds: number) => new Date(unixSeconds * 1000).toLocaleDateString();
 
+/** Marks a current rank with no ranked game yet this season: the level is only the soft-reset placement. */
+const PLACEMENT_MARK = "*";
+const PLACEMENT_NOTE = "no ranked game yet this season, so this is the placement level";
+
+const currentRankTitle = (entry: RankEntry) =>
+  entry.games === 0 ? `${seasonLabel(entry.season)} · ${PLACEMENT_NOTE}` : `${seasonLabel(entry.season)} · ${entry.games} ranked game${entry.games === 1 ? "" : "s"}`;
+
 /** One rank line: tier-coloured name plus score, e.g. "Diamond 2 · 4,120 RS". */
 function RankLabel({ entry, peak }: { entry: RankEntry | null; peak?: boolean }) {
   if (!entry) return <span class="mr-rank is-unranked">Unranked</span>;
   const level = peak ? entry.maxLevel : entry.level;
   const score = peak ? entry.maxScore : entry.score;
   return (
-    <span
-      class={`mr-rank is-${rankTier(level)}`}
-      title={peak ? `Highest rank reached, ${seasonLabel(entry.season)}` : `${seasonLabel(entry.season)} · ${entry.games} ranked game${entry.games === 1 ? "" : "s"}`}
-    >
-      <span class="mr-rank-name">{rankName(level)}</span>
+    <span class={`mr-rank is-${rankTier(level)}`} title={peak ? `Highest rank reached, ${seasonLabel(entry.season)}` : currentRankTitle(entry)}>
+      <span class="mr-rank-name">
+        {rankName(level)}
+        {!peak && level > 0 && entry.games === 0 && PLACEMENT_MARK}
+      </span>
       {level > 0 && score > 0 && <span class="mr-rank-score">{formatScore(score)}</span>}
-      {!peak && level > 0 && entry.games === 0 && <span class="mr-rank-score">0 games</span>}
     </span>
   );
 }
 
-/** Current and peak rank stacked, for the summary table and the detail header. */
+/**
+ * A rank as a tile for the summary table. Current: the tier badge with the exact
+ * rank underneath ("Diamond 2", then the score). Peak: the badge, the exact rank
+ * and the season it was reached in; the score is in the tooltip.
+ */
+function RankTile({ entry, peak }: { entry: RankEntry | null; peak?: boolean }) {
+  const level = entry ? (peak ? entry.maxLevel : entry.level) : 0;
+  const score = entry ? (peak ? entry.maxScore : entry.score) : 0;
+  const tier = rankTier(level);
+  const badge = rankBadge(tier);
+  const title = !entry
+    ? peak
+      ? "No ranked game recorded"
+      : "No ranked game this season"
+    : peak
+      ? `${rankName(level)}${score > 0 ? ` · ${formatScore(score)}` : ""} · highest rank reached, ${seasonLabel(entry.season)}`
+      : currentRankTitle(entry);
+  return (
+    <span class={`mr-rank-tile mr-rank is-${tier}`} title={title}>
+      {badge ? <img class="mr-rank-badge" src={badge} width={56} height={56} alt={rankName(level)} loading="lazy" decoding="async" /> : <span class="mr-rank-badge is-empty" />}
+      {peak && entry ? (
+        <>
+          <span class="mr-rank-name">{rankName(level)}</span>
+          <span class="mr-rank-score">{seasonLabel(entry.season)}</span>
+        </>
+      ) : (
+        <>
+          <span class="mr-rank-name">
+            {rankName(level)}
+            {level > 0 && entry?.games === 0 && PLACEMENT_MARK}
+          </span>
+          {level > 0 && score > 0 && <span class="mr-rank-score">{formatScore(score)}</span>}
+        </>
+      )}
+    </span>
+  );
+}
+
+/** Hero lists show at most this many heroes, most played first (a 5 x 2 grid in the hero-pool card, with the tenth slot for "more"). */
+const HERO_LIST_LIMIT = 9;
+
+/** Current and peak rank stacked, for the detail header. */
 function RankIndicator({ rank }: { rank?: RankSummary }) {
   if (!rank) return <span class="sc-muted">Re-run to load ranks</span>;
   const current = rank.current && rank.current.level > 0 ? rank.current : null;
@@ -99,7 +170,11 @@ function RankIndicator({ rank }: { rank?: RankSummary }) {
   );
 }
 
-type HeroStatsState = { status: "idle" } | { status: "loading" } | { status: "error"; message: string } | { status: "done"; season: number; stats: MrHeroStats };
+type HeroStatsState =
+  | { status: "idle" }
+  | { status: "loading" }
+  | { status: "error"; message: string }
+  | { status: "done"; season: number; bracket: string; stats: MrHeroStats };
 
 /** The top heroes worth banning against this lineup, from hero overlap weighted by the current ranked meta. */
 function BanSuggestions({ lineup, statsState, bracket, excluded }: { lineup: DonePlayer[]; statsState: HeroStatsState; bracket: MetaBracket; excluded: number }) {
@@ -108,14 +183,19 @@ function BanSuggestions({ lineup, statsState, bracket, excluded }: { lineup: Don
     () => recommendBans(lineup.map((p) => ({ name: p.player.name, analysis: p.analysis })), meta),
     [lineup, meta],
   );
+  // The tier list has no bracket below Diamond, so the data may cover a narrower bracket than the lineup's; say which.
   const metaNote =
     statsState.status === "done"
-      ? `${bracket.label} ranked, ${seasonLabel(statsState.season)}`
+      ? `${statsState.stats.rates?.bracket ?? bracket.label} ranked, ${seasonLabel(statsState.season)}`
       : statsState.status === "loading"
         ? "loading current meta…"
         : statsState.status === "error"
           ? `meta unavailable (${statsState.message})`
           : "meta not loaded";
+
+  // Which card's reasoning is open underneath the row.
+  const [openHero, setOpenHero] = useState<string | null>(null);
+  const open = suggestions.find((s) => s.hero === openHero) ?? null;
 
   return (
     <section class="mr-bans" aria-label="Suggested bans">
@@ -123,9 +203,8 @@ function BanSuggestions({ lineup, statsState, bracket, excluded }: { lineup: Don
         <div>
           <h3>Suggested bans</h3>
           <p class="sc-muted">
-            Heroes this lineup leans on, weighted by the current meta ({metaNote}). Score = overlap across players, plus one-trick and multi-player
-            bonuses, scaled by win rate and ban rate.
-            {excluded > 0 && ` ${excluded} player${excluded === 1 ? " is" : "s are"} left out; tick "count in bans" in the table to include them.`}
+            Heroes this lineup leans on, weighted by the current meta ({metaNote}). Click a ban to see how its score came about.
+            {excluded > 0 && ` ${excluded} player${excluded === 1 ? " is" : "s are"} left out; click the tick beside a player's name to count them.`}
           </p>
         </div>
       </header>
@@ -134,58 +213,140 @@ function BanSuggestions({ lineup, statsState, bracket, excluded }: { lineup: Don
           {lineup.length === 0 ? "Every player is left out of the ban calculation." : "No hero data in the selected game modes yet, so there is nothing to base a ban on."}
         </p>
       ) : (
-        <ol class="mr-ban-list">
-          {suggestions.map((s, i) => (
-            <BanCard key={s.hero} index={i + 1} suggestion={s} lineupSize={lineup.length} />
-          ))}
-        </ol>
+        <>
+          <ol class="mr-ban-list">
+            {suggestions.map((s, i) => (
+              <BanCard
+                key={s.hero}
+                index={i + 1}
+                suggestion={s}
+                lineupSize={lineup.length}
+                open={open?.hero === s.hero}
+                onToggle={() => setOpenHero(open?.hero === s.hero ? null : s.hero)}
+              />
+            ))}
+          </ol>
+          {open && <BanReasoning suggestion={open} />}
+        </>
       )}
     </section>
   );
 }
 
-function BanCard({ index, suggestion: s, lineupSize }: { index: number; suggestion: BanSuggestion; lineupSize: number }) {
+/** The hero's portrait at a given pixel size; nothing for a hero without one, so text layouts stay intact. */
+function HeroPortrait({ hero, size }: { hero: string; size: number }) {
+  const src = heroPortrait(hero);
+  if (!src) return null;
+  return <img class="mr-hero-img" src={src} width={size} height={size} alt="" loading="lazy" decoding="async" />;
+}
+
+/** One suggested ban as a card in the row; clicking it opens its reasoning beneath the row. */
+function BanCard({ index, suggestion: s, lineupSize, open, onToggle }: { index: number; suggestion: BanSuggestion; lineupSize: number; open: boolean; onToggle: () => void }) {
   const regulars = s.players.filter((p) => p.games >= 2);
+  const oneTricks = s.players.filter((p) => p.oneTrick).length;
   return (
-    <li class={`mr-ban-card ${s.metaOnly ? "is-meta-only" : ""}`}>
-      <div class="mr-ban-head">
-        <span class="mr-ban-index">#{index}</span>
-        <span class="mr-ban-hero">{s.hero}</span>
-      </div>
-      <p class="mr-ban-why">
-        {s.metaOnly ? (
-          <span class="sc-muted">Nobody in this lineup plays it; added as a strong meta ban.</span>
-        ) : (
-          <>
-            Played by {regulars.length || s.players.length} of {lineupSize}
-            {s.players.some((p) => p.oneTrick) && <span class="mr-one-trick">One-trick</span>}
-          </>
-        )}
+    <li>
+      <button
+        type="button"
+        class={`mr-ban-card ${s.metaOnly ? "is-meta-only" : ""} ${open ? "is-open" : ""}`}
+        aria-expanded={open}
+        aria-label={`Ban ${index}: ${s.hero}`}
+        onClick={onToggle}
+      >
+        <HeroPortrait hero={s.hero} size={88} />
+        <span class="mr-ban-text">
+          <span class="mr-ban-hero">{s.hero}</span>
+          <span class="mr-ban-summary">
+            {s.metaOnly ? "meta ban" : `played by ${regulars.length || s.players.length} of ${lineupSize}`}
+            {oneTricks > 0 && <span class="mr-one-trick">One-trick</span>}
+          </span>
+          <span class="mr-ban-meta">
+            {s.meta ? (
+              <>
+                <span title="Win rate in the current meta">{pct(s.meta.winRate, 1)} WR</span>
+                <span title="Share of matches where this hero was banned">{pct(s.meta.banRate)} banned</span>
+              </>
+            ) : (
+              <span>no meta data</span>
+            )}
+          </span>
+        </span>
+      </button>
+    </li>
+  );
+}
+
+/** The reasoning behind one ban's score: who plays the hero, and how the lineup score and meta factor combine. */
+function BanReasoning({ suggestion: s }: { suggestion: BanSuggestion }) {
+  const regulars = s.players.filter((p) => p.games >= 2);
+  const oneTricks = s.players.filter((p) => p.oneTrick).length;
+  const factor = metaFactor(s.meta);
+  const lineupScore = s.score / factor;
+  return (
+    <div class="mr-ban-reasoning" role="region" aria-label={`Why ban ${s.hero}`}>
+      <p class="mr-ban-reasoning-title">
+        <HeroPortrait hero={s.hero} size={28} /> {s.hero}
       </p>
       {s.players.length > 0 && (
         <ul class="mr-ban-players">
           {s.players.map((p) => (
             <li key={p.name} class={p.oneTrick ? "is-one-trick" : ""}>
-              <span class="mr-ban-player">{p.name}</span>
-              <span class="mr-ban-share">
-                {pct(p.share)} · ×{p.games}
+              <span class="mr-ban-player">
+                {p.name}
+                {p.oneTrick && <span class="mr-one-trick">One-trick</span>}
+              </span>
+              <span class="mr-ban-share" title={`${p.games} of their counted games`}>
+                {pct(p.share)} of games
               </span>
             </li>
           ))}
         </ul>
       )}
-      <p class="mr-ban-meta">
+      <p class="mr-ban-why">
+        {s.metaOnly ? (
+          <>Nobody in this lineup plays {s.hero}; it is here purely as a strong meta ban.</>
+        ) : (
+          <>
+            Lineup score {lineupScore.toFixed(2)}: the players' shares of games on {s.hero} add up to {s.overlap.toFixed(2)}
+            {oneTricks > 0 && `, plus 0.5 for ${oneTricks === 1 ? "a one-trick" : `${oneTricks} one-tricks`}`}
+            {regulars.length > 1 && `, plus 0.25 for each regular beyond the first (${regulars.length} regulars)`}.
+          </>
+        )}{" "}
         {s.meta ? (
           <>
-            <span title="Win rate">{pct(s.meta.winRate, 1)} WR</span>
-            <span title="Share of matches where this hero was banned">{pct(s.meta.banRate)} banned</span>
-            <span title="Share of team slots">{pct(s.meta.pickRate, 1)} picked</span>
+            Meta factor ×{factor.toFixed(2)}: 1 plus the win-rate edge over 50% ({pct(s.meta.winRate, 1)} WR) plus the ban rate ({pct(s.meta.banRate)}),
+            with a {pct(s.meta.pickRate, 1)} pick rate. Final score {s.score.toFixed(2)}.
           </>
         ) : (
-          <span class="sc-muted">No meta data for this hero</span>
+          <>No meta data for this hero, so the lineup score stands as is: {s.score.toFixed(2)}.</>
         )}
       </p>
-    </li>
+    </div>
+  );
+}
+
+/** The debug terminal: the data layer's own log of requests, cache hits, retries and fallbacks, newest at the bottom. */
+function DebugTerminal() {
+  const [entries, setEntries] = useState<readonly DebugEntry[]>([]);
+  const ref = useRef<HTMLPreElement>(null);
+  useEffect(() => subscribeDebug((all) => setEntries([...all])), []);
+  useEffect(() => {
+    const el = ref.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [entries]);
+  const time = (at: number) => new Date(at).toLocaleTimeString("en-GB", { hour12: false });
+  return (
+    <div class="mr-terminal-wrap">
+      <div class="mr-terminal-bar">
+        <span>backend log · {entries.length} line{entries.length === 1 ? "" : "s"}</span>
+        <button type="button" class="sc-clear" onClick={clearDebugLog} disabled={entries.length === 0}>
+          Clear
+        </button>
+      </div>
+      <pre class="mr-terminal" ref={ref} aria-live="polite">
+        {entries.length === 0 ? "idle — run an analysis to see what the data layer does" : entries.map((e) => `${time(e.at)}  ${e.text}`).join("\n")}
+      </pre>
+    </div>
   );
 }
 
@@ -196,7 +357,6 @@ function RoleBadge({ role }: { role: PlayerRole | null }) {
   return (
     <span class={`mr-role is-${role.role}`} title={split}>
       {role.label}
-      {role.role !== "flex" && <span class="mr-role-share">{Math.round(role.shares[0].share * 100)}%</span>}
     </span>
   );
 }
@@ -215,6 +375,48 @@ function OneTrickBadge({ trick }: { trick: OneTrick | null }) {
   );
 }
 
+/** Share of a breakdown's games spent on one hero, as a whole percent. */
+const share = (games: number, total: number) => (total > 0 ? `${Math.round((games / total) * 100)}%` : "—");
+
+/** "62% WR", or "— WR" when every game was a draw. */
+function wrLabel(b: { wins: number; losses: number }): string {
+  const rate = winRate(b);
+  return rate === null ? "— WR" : `${rate}% WR`;
+}
+
+const record = (b: { wins: number; losses: number; draws: number }) => `${b.wins}W-${b.losses}L${b.draws ? `-${b.draws}D` : ""}`;
+
+/**
+ * Places a cell's hover card so it never pushes the page out: above the cell
+ * when it would run past the bottom of the viewport or of the page content
+ * (which would lengthen the page), and right-aligned when it would run off the
+ * right edge. Runs as the card is about to show, so it can be measured. On
+ * narrow screens the card is laid out inline by CSS and needs no placing.
+ */
+function placeHoverCard(e: Event) {
+  const host = e.currentTarget as HTMLElement;
+  const card = host.querySelector<HTMLElement>(".sc-hover-card");
+  if (!card || window.matchMedia("(max-width: 900px)").matches) return;
+  host.classList.remove("opens-up", "opens-left");
+  card.style.maxHeight = "";
+  const hostRect = host.getBoundingClientRect();
+  // The results pane scrolls on its own, so it is the box the card must stay inside (the viewport, when stacked).
+  const pane = host.closest(".mr-main")?.getBoundingClientRect();
+  const top = Math.max(0, pane?.top ?? 0);
+  const bottom = Math.min(window.innerHeight, pane?.bottom ?? Infinity);
+  const right = Math.min(window.innerWidth, pane?.right ?? Infinity);
+  const roomBelow = bottom - 8 - (hostRect.bottom + 8);
+  const roomAbove = hostRect.top - 8 - (top + 8);
+  const height = card.offsetHeight;
+  if (height > roomBelow) {
+    const up = height <= roomAbove || roomAbove > roomBelow;
+    if (up) host.classList.add("opens-up");
+    // Room on neither side: take the larger one and let the card scroll inside it.
+    if (height > (up ? roomAbove : roomBelow)) card.style.maxHeight = `${Math.max(120, up ? roomAbove : roomBelow)}px`;
+  }
+  if (hostRect.left + card.offsetWidth > right - 16) host.classList.add("opens-left");
+}
+
 /** Summary cell: most played hero in one breakdown, with tie highlight and a hover card of the rest. */
 function TopHeroCell({ breakdown, label }: { breakdown: Breakdown; label: string }) {
   const tied = topHeroes(breakdown.heroes);
@@ -223,7 +425,6 @@ function TopHeroCell({ breakdown, label }: { breakdown: Breakdown; label: string
 
   const tiedNames = new Set(tied.slice(1).map((h) => h.hero));
   const isTie = tiedNames.size > 0;
-  const alsoPlayed = breakdown.heroes.filter((h) => h.hero !== top.hero);
 
   return (
     <td>
@@ -231,31 +432,45 @@ function TopHeroCell({ breakdown, label }: { breakdown: Breakdown; label: string
         class={`sc-top ${isTie ? "is-tied" : ""}`}
         tabindex={0}
         aria-label={isTie ? `${top.hero}, tied with ${[...tiedNames].join(", ")}` : undefined}
+        onMouseEnter={placeHoverCard}
+        onFocus={placeHoverCard}
       >
-        <span class="sc-agent-name">{top.hero}</span>
+        <span class="sc-hero-tile is-main">
+          <HeroPortrait hero={top.hero} size={48} />
+          <span class="sc-hero-tile-name">{top.hero}</span>
+          <span class="sc-hero-tile-stat">
+            {top.games} of {breakdown.games}
+          </span>
+          <span class="sc-hero-tile-stat">{wrLabel(top)}</span>
+        </span>
+        {/* The whole hero pool for this mode, most played first, as portrait tiles. */}
         <span class="sc-hover-card" role="tooltip">
           <span class="sc-hover-title">
-            {isTie ? `Tied for most played (${label})` : alsoPlayed.length ? `Also played (${label})` : `Only hero played (${label})`}
+            {isTie ? `Tied for most played · hero pool (${label})` : `Hero pool (${label})`}
           </span>
-          {alsoPlayed.length > 0 && (
-            <ul class="sc-hover-list">
-              {alsoPlayed.map((h) => (
-                <li key={h.hero} class={tiedNames.has(h.hero) ? "is-tied" : ""}>
-                  <span class="sc-agent-name">
-                    {h.hero}
-                    {tiedNames.has(h.hero) && <span class="sc-tied-mark"> tied</span>}
-                  </span>
-                  <span class="sc-agent-record">
-                    ×{h.games} · {h.wins}W-{h.losses}L{h.draws ? `-${h.draws}D` : ""}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )}
+          <ul class="sc-hero-grid">
+            {breakdown.heroes.slice(0, HERO_LIST_LIMIT).map((h) => (
+              <li
+                key={h.hero}
+                class={`sc-hero-tile ${h.hero === top.hero ? "is-top" : ""} ${tiedNames.has(h.hero) ? "is-tied" : ""}`}
+                title={`${h.hero} · ${h.games} of ${breakdown.games} games · ${record(h)}`}
+              >
+                <HeroPortrait hero={h.hero} size={48} />
+                <span class="sc-hero-tile-name">{h.hero}</span>
+                <span class="sc-hero-tile-stat">
+                  {h.games} of {breakdown.games}
+                </span>
+                <span class="sc-hero-tile-stat">{wrLabel(h)}</span>
+              </li>
+            ))}
+            {breakdown.heroes.length > HERO_LIST_LIMIT && (
+              <li class="sc-hero-tile is-more" title={breakdown.heroes.slice(HERO_LIST_LIMIT).map((h) => `${h.hero} (${h.games})`).join(", ")}>
+                <span class="sc-hero-tile-name">+{breakdown.heroes.length - HERO_LIST_LIMIT} more</span>
+                <span class="sc-hero-tile-stat">{breakdown.heroes.slice(HERO_LIST_LIMIT).reduce((n, h) => n + h.games, 0)} games</span>
+              </li>
+            )}
+          </ul>
         </span>
-      </span>{" "}
-      <span class="sc-agent-record">
-        ×{top.games} of {breakdown.games}
       </span>
     </td>
   );
@@ -293,7 +508,14 @@ function PlayerDetail({ player, objectives }: { player: DonePlayer; objectives: 
             {analysis.skippedNoHero > 0 && ` · ${analysis.skippedNoHero} skipped (no hero recorded)`}
             {player.player.candidates > 1 && ` · exact name match chosen from ${player.player.candidates} similar names`}
             {player.player.caseInsensitive && ` · matched ignoring letter case`}
-            {player.player.source && ` · via ${player.player.source}`}
+            {player.historyPrivate && (
+              <>
+                {" · "}
+                <span class="mr-one-trick" title="This player hides their battle history in-game. These matches were indexed before that and may be out of date.">
+                  History now private
+                </span>
+              </>
+            )}
           </p>
         </div>
       </header>
@@ -306,7 +528,7 @@ function PlayerDetail({ player, objectives }: { player: DonePlayer; objectives: 
             <thead>
               <tr>
                 <th>Mode</th>
-                <th class="sc-num">W / L</th>
+                <th class="sc-num">Win %</th>
                 <th>Hero history</th>
                 <th>Most recent</th>
               </tr>
@@ -325,22 +547,25 @@ function PlayerDetail({ player, objectives }: { player: DonePlayer; objectives: 
                         </span>
                       </td>
                       <td class="sc-num">
-                        <span class="sc-record">
-                          {r.breakdown.wins}W-{r.breakdown.losses}L{r.breakdown.draws ? `-${r.breakdown.draws}D` : ""}
+                        <span class="sc-record" title={record(r.breakdown)}>
+                          {rowRate === null ? "—" : `${rowRate}%`}
                         </span>
-                        <span class="sc-rate">{rowRate === null ? "—" : `${rowRate}%`}</span>
                       </td>
                       <td>
                         <ul class="sc-agents">
-                          {r.breakdown.heroes.map((h) => (
-                            <li key={h.hero} class="sc-agent">
+                          {r.breakdown.heroes.slice(0, HERO_LIST_LIMIT).map((h) => (
+                            <li key={h.hero} class="sc-agent" title={`${h.games} of ${r.breakdown.games} games · ${record(h)}`}>
+                              <HeroPortrait hero={h.hero} size={20} />
                               <span class="sc-agent-name">{h.hero}</span>
-                              <span class="sc-agent-games">×{h.games}</span>
-                              <span class="sc-agent-record" title="wins-losses">
-                                {h.wins}W-{h.losses}L{h.draws ? `-${h.draws}D` : ""}
-                              </span>
+                              <span class="sc-agent-games">{share(h.games, r.breakdown.games)}</span>
+                              <span class="sc-agent-record">{wrLabel(h)}</span>
                             </li>
                           ))}
+                          {r.breakdown.heroes.length > HERO_LIST_LIMIT && (
+                            <li class="sc-agent is-more" title={r.breakdown.heroes.slice(HERO_LIST_LIMIT).map((h) => `${h.hero} (${h.games})`).join(", ")}>
+                              <span class="sc-agent-name">+{r.breakdown.heroes.length - HERO_LIST_LIMIT} more</span>
+                            </li>
+                          )}
                         </ul>
                       </td>
                       <td>
@@ -351,6 +576,7 @@ function PlayerDetail({ player, objectives }: { player: DonePlayer; objectives: 
                               class={`sc-recent-game is-${g.result}`}
                               title={`${formatDate(g.startedAt)} · ${g.map} · ${g.result}`}
                             >
+                              <HeroPortrait hero={g.hero} size={18} />
                               {g.hero}
                               <span class="sc-recent-result">{RESULT_LABEL[g.result]}</span>
                             </li>
@@ -397,11 +623,6 @@ function ResultsSummary({ usernames, results }: { usernames: string[]; results: 
     const r = results[username];
     return r?.status === "done" ? [{ username, player: r.player, matches: r.matches, seasons: r.seasons, rank: r.rank }] : [];
   });
-  const pending = usernames.flatMap((username) => {
-    const r = results[username];
-    return r && r.status !== "done" ? [{ username, status: r.status, message: r.message }] : [];
-  });
-
   // Game modes present across everyone's raw history, before filtering.
   const modeTotals = new Map<number, GameModeInfo>();
   for (const p of finished) {
@@ -439,36 +660,26 @@ function ResultsSummary({ usernames, results }: { usernames: string[]; results: 
         })()
       : "";
 
-  // Current-season hero stats for the ban suggestions, fetched once per season and cached.
+  // Hero stats for the ban suggestions, fetched once per season and rank bracket and cached.
+  const banLineup = done.filter((p) => !banExcluded.includes(p.username));
+  const bracket = bracketFor(banLineup.map((p) => (p.rank?.current && p.rank.current.games > 0 ? p.rank.current.level : 0)));
   const metaSeason = done.reduce<number | null>((best, p) => (p.seasons.length ? Math.max(best ?? 0, ...p.seasons) : best), null);
   const [statsState, setStatsState] = useState<HeroStatsState>({ status: "idle" });
   useEffect(() => {
     if (metaSeason === null || done.length === 0) return;
-    if (statsState.status === "done" && statsState.season === metaSeason) return;
+    if (statsState.status === "done" && statsState.season === metaSeason && statsState.bracket === bracket.label) return;
     let cancelled = false;
     setStatsState({ status: "loading" });
-    loadHeroStats(metaSeason)
-      .then((stats) => !cancelled && setStatsState({ status: "done", season: metaSeason, stats }))
+    loadHeroStats(metaSeason, bracket)
+      .then((stats) => !cancelled && setStatsState({ status: "done", season: metaSeason, bracket: bracket.label, stats }))
       .catch((err) => !cancelled && setStatsState({ status: "error", message: err instanceof Error ? err.message : "failed to load" }));
     return () => {
       cancelled = true;
     };
-  }, [metaSeason, done.length]);
-  const banLineup = done.filter((p) => !banExcluded.includes(p.username));
-  const bracket = bracketFor(banLineup.map((p) => (p.rank?.current && p.rank.current.games > 0 ? p.rank.current.level : 0)));
+  }, [metaSeason, done.length, bracket.label]);
 
   return (
-    <section class="sc-results" aria-live="polite">
-      {pending.length > 0 && (
-        <ul class="sc-status-list">
-          {pending.map((p) => (
-            <li key={p.username} class={`sc-status is-${p.status}`}>
-              <strong>{p.username}</strong> <span class="sc-muted">{p.message}</span>
-            </li>
-          ))}
-        </ul>
-      )}
-
+    <section class="sc-results">
       {done.length > 0 && (
         <>
           <header class="sc-report-header">
@@ -502,7 +713,8 @@ function ResultsSummary({ usernames, results }: { usernames: string[]; results: 
               <thead>
                 <tr>
                   <th>Player</th>
-                  <th class="mr-rank-head">Rank</th>
+                  <th class="mr-rank-head">Current rank</th>
+                  <th class="mr-rank-head">Peak rank</th>
                   <th class="sc-map-head">Overall</th>
                   {objectives.map((o) => (
                     <th key={o} class="sc-map-head">
@@ -517,26 +729,46 @@ function ResultsSummary({ usernames, results }: { usernames: string[]; results: 
                   return (
                     <tr key={p.username} class={trick ? "is-one-trick" : ""}>
                       <th scope="row" class="sc-player-cell">
-                        <button
-                          type="button"
-                          class={`sc-player-button ${selectedPlayers.includes(p.username) ? "is-active" : ""}`}
-                          aria-pressed={selectedPlayers.includes(p.username)}
-                          onClick={() => togglePlayer(p.username)}
-                        >
-                          {p.player.name}
-                        </button>
+                        <span class="mr-player-head">
+                          {/* Big tick: whether this player's heroes count towards the suggested bans. */}
+                          <button
+                            type="button"
+                            class={`mr-ban-tick ${banExcluded.includes(p.username) ? "" : "is-on"}`}
+                            aria-pressed={!banExcluded.includes(p.username)}
+                            aria-label={`Count ${p.player.name} in the suggested bans`}
+                            title={banExcluded.includes(p.username) ? "Left out of the suggested bans; click to count them" : "Counted in the suggested bans; click to leave them out"}
+                            onClick={() => toggleBanPlayer(p.username)}
+                          >
+                            ✓
+                          </button>
+                          <button
+                            type="button"
+                            class={`sc-player-button ${selectedPlayers.includes(p.username) ? "is-active" : ""}`}
+                            aria-pressed={selectedPlayers.includes(p.username)}
+                            onClick={() => togglePlayer(p.username)}
+                          >
+                            {p.player.name}
+                          </button>
+                        </span>
                         <span class="mr-badges">
                           <RoleBadge role={playerRole(p.analysis.overall)} />
                           <OneTrickBadge trick={trick} />
                         </span>
-                        <label class="mr-ban-toggle" title="Include this player's heroes in the suggested bans">
-                          <input type="checkbox" checked={!banExcluded.includes(p.username)} onChange={() => toggleBanPlayer(p.username)} />
-                          count in bans
-                        </label>
                       </th>
-                      <td class="mr-rank-cell">
-                        <RankIndicator rank={p.rank} />
-                      </td>
+                      {p.rank ? (
+                        <>
+                          <td class="mr-rank-cell">
+                            <RankTile entry={p.rank.current && p.rank.current.level > 0 ? p.rank.current : null} />
+                          </td>
+                          <td class="mr-rank-cell">
+                            <RankTile entry={p.rank.peak} peak />
+                          </td>
+                        </>
+                      ) : (
+                        <td class="mr-rank-cell sc-muted" colSpan={2}>
+                          Re-run to load ranks
+                        </td>
+                      )}
                       <TopHeroCell breakdown={p.analysis.overall} label="overall" />
                       {objectives.map((o) => (
                         <TopHeroCell key={o} breakdown={p.analysis.byObjective[o]} label={o} />
@@ -579,7 +811,11 @@ export function MrScraper() {
   const [players, setPlayers] = usePersistentState<string[]>(STORE.players, () => Array(MIN_PLAYER_SLOTS).fill(""));
   const [results, setResults] = usePersistentState<Record<string, PlayerResult>>(STORE.results, () => ({}), finishedOnly);
   const [seasonsBack, setSeasonsBack] = usePersistentState<number>(STORE.seasonsBack, () => 0);
+  /** Shows the backend log under the form, and the reason under a failed name. */
+  const [debug, setDebug] = usePersistentState<boolean>(STORE.debug, () => false);
   const [running, setRunning] = useState(false);
+  /** Aborts the analysis in progress; the Cancel button calls it. */
+  const abortRef = useRef<AbortController | null>(null);
 
   // Lists saved before the default grew to MIN_PLAYER_SLOTS entries get topped up once.
   useEffect(() => {
@@ -615,8 +851,9 @@ export function MrScraper() {
   function addPlayer() {
     setPlayers((prev) => [...prev, ""]);
   }
+  /** Drops the row, or just empties it while the form is at its minimum size. */
   function removePlayer(index: number) {
-    setPlayers((prev) => (prev.length > MIN_PLAYER_SLOTS ? prev.filter((_, i) => i !== index) : prev));
+    setPlayers((prev) => (prev.length > MIN_PLAYER_SLOTS ? prev.filter((_, i) => i !== index) : prev.map((p, i) => (i === index ? "" : p))));
   }
   function clearAll() {
     setPlayers(Array(MIN_PLAYER_SLOTS).fill(""));
@@ -624,7 +861,6 @@ export function MrScraper() {
     clearStored([STORE.modes, STORE.selected, STORE.banExcluded]);
   }
 
-  const canRemove = players.length > MIN_PLAYER_SLOTS;
   const validNames = [...new Set(players.map((p) => p.trim()).filter((p) => USERNAME_PATTERN.test(p)))];
 
   function analyze(e: Event) {
@@ -642,98 +878,133 @@ export function MrScraper() {
     if (running || validNames.length === 0) return;
     setRunning(true);
     setResults(Object.fromEntries(validNames.map((n) => [n, { status: "loading", message: "Queued…" }])));
+    const controller = new AbortController();
+    abortRef.current = controller;
+    const { signal } = controller;
+    debugLog(`run started: ${validNames.length} player${validNames.length === 1 ? "" : "s"}, ${seasonsBack} earlier season${seasonsBack === 1 ? "" : "s"}`);
 
     // Players are processed one at a time to be gentle on the upstream site.
     for (const username of validNames) {
       const update = (r: PlayerResult) => setResults((prev) => ({ ...prev, [username]: r }));
-      const onRateLimit = (secondsLeft: number, attempt: number) =>
+      if (signal.aborted) {
+        update({ status: "error", message: "Cancelled." });
+        continue;
+      }
+      let lastAttempt = 0;
+      const onRateLimit = (secondsLeft: number, attempt: number) => {
+        if (attempt !== lastAttempt) {
+          lastAttempt = attempt;
+          debugLog(`rate limited (429); waiting ${secondsLeft}s before retry ${attempt} of 3`);
+        }
         update({ status: "loading", message: `The stats API is not answering. Retrying in ${secondsLeft}s (attempt ${attempt} of 3)…` });
+      };
+      debugLog(`── ${username}`);
       try {
         update({ status: "loading", message: "Looking up player…" });
-        const player = await findPlayer(username, { onRateLimit });
-        update({ status: "loading", message: `Fetching match history for ${player.name} from ${player.source}…` });
+        const player = await findPlayer(username, { onRateLimit, signal });
+        update({ status: "loading", message: `Fetching match history for ${player.name}…` });
         const { name, matches, seasons, historyPrivate, rank, source } = await fetchRecentMatches(player.uid, {
           seasonsBack,
           onRateLimit,
-          onSeason: (season, fetched, source) =>
-            update({ status: "loading", message: `Fetched ${fetched} matches${season !== null ? ` through ${seasonLabel(season)}` : ""} from ${source}…` }),
+          signal,
+          onSeason: (season, fetched) =>
+            update({ status: "loading", message: `Fetched ${fetched} matches${season !== null ? ` through ${seasonLabel(season)}` : ""}…` }),
         });
         if (historyPrivate && matches.length === 0) {
+          debugLog(`${player.name}: history private and nothing cached`);
           update({
             status: "error",
             message: `${player.name}'s match history is private. They can show it in-game under Career > Settings > Battle History visibility.`,
           });
           continue;
         }
-        update({ status: "done", player: { ...player, name: name || player.name, source }, matches, seasons, rank });
+        debugLog(`${name || player.name}: done, ${matches.length} matches over ${seasons.length} season${seasons.length === 1 ? "" : "s"} via ${source}`);
+        update({ status: "done", player: { ...player, name: name || player.name, source }, matches, seasons, rank, historyPrivate });
       } catch (err) {
+        if (signal.aborted) {
+          debugLog(`${username}: cancelled`);
+          update({ status: "error", message: "Cancelled." });
+          continue;
+        }
         const message = err instanceof ApiError || err instanceof Error ? err.message : "Something went wrong.";
+        debugLog(`${username}: failed — ${message}`);
         update({ status: "error", message });
       }
     }
+    debugLog(signal.aborted ? "run cancelled" : "run finished");
+    abortRef.current = null;
     setRunning(false);
   }
 
   return (
-    <main class="sc-scraper">
-      <header class="sc-header">
-        <h1>MR_Scraper</h1>
-        <p class="sc-subtitle">Heroes played in competitive and custom matches, overall and per objective mode, with current and peak rank</p>
-      </header>
+    <main class="sc-scraper mr-app">
+      {/* Sidebar: the player form and the progress of the run. Main: everything the run produced. */}
+      <aside class="mr-sidebar">
+        <header class="sc-header">
+          <h1>MR_Scraper</h1>
+          <p class="sc-subtitle">Heroes played in competitive and custom matches, overall and per objective mode, with current and peak rank</p>
+        </header>
 
-      <section class="sc-panel">
-        <h2>Hero tracker</h2>
-        <p class="sc-muted">
-          Pulls each player's match history from MarvelRivalsAPI.com (up to 120 matches per season), falling back to rivalsmeta.com (last 20 per season)
-          when it is unavailable. Meta data for the ban suggestions comes from rivalsmeta.com.
-        </p>
+        <section class="sc-panel mr-search">
+          <h2>Hero tracker</h2>
 
         <form class="sc-form" onSubmit={analyze}>
-          <p class="sc-muted">
-            Enter exact Marvel Rivals usernames or UIDs (case matters; a numeric UID is used as-is). Paste a whole list, one name per line, into any box to
-            fill several at once. Add more boxes for extra players.
-          </p>
           <div class="sc-fields">
             {players.map((value, i) => {
               const trimmed = value.trim();
               const invalid = trimmed !== "" && !USERNAME_PATTERN.test(trimmed);
               const inputId = `mr-player-${i + 1}`;
+              // The run's progress for this name colours the field: sweeping while loading, green when done, red on failure.
+              const result = results[trimmed];
+              const status = result?.status;
+              const message = result && result.status !== "done" ? result.message : undefined;
+              const removes = players.length > MIN_PLAYER_SLOTS;
               return (
-                <div class={`sc-field ${canRemove ? "has-remove" : ""}`} key={inputId}>
+                <div class={`sc-field has-remove ${status ? `is-${status}` : ""}`} key={inputId}>
                   <label for={inputId}>Player {i + 1}</label>
                   <input
                     id={inputId}
                     type="text"
                     class={`sc-input ${invalid ? "is-invalid" : ""}`}
-                    placeholder="Username or UID"
+                    placeholder="Name or UID"
                     value={value}
                     autocomplete="off"
                     spellcheck={false}
                     aria-invalid={invalid}
                     disabled={running}
+                    title={message}
                     onInput={(e) => updatePlayer(i, (e.currentTarget as HTMLInputElement).value)}
                     onPaste={(e) => pasteList(i, e)}
                   />
-                  {canRemove && (
-                    <button
-                      type="button"
-                      class="sc-remove"
-                      aria-label={`Remove player ${i + 1}`}
-                      title="Remove this player"
-                      disabled={running}
-                      onClick={() => removePlayer(i)}
-                    >
-                      ×
-                    </button>
+                  <button
+                    type="button"
+                    class="sc-remove"
+                    aria-label={removes ? `Remove player ${i + 1}` : `Clear player ${i + 1}`}
+                    title={removes ? "Remove this player" : "Clear this name"}
+                    disabled={running}
+                    onClick={() => removePlayer(i)}
+                  >
+                    ×
+                  </button>
+                  {status === "error" && debug && (
+                    <p class="sc-field-note" role="alert">
+                      {message}
+                    </p>
                   )}
                 </div>
               );
             })}
           </div>
+          {debug && <DebugTerminal />}
           <div class="sc-form-actions">
             <button type="submit" class="sc-add sc-primary" disabled={running || validNames.length === 0}>
-              {running ? "Analyzing…" : `Analyze ${validNames.length || ""} player${validNames.length === 1 ? "" : "s"}`}
+              {running ? "Analyzing…" : validNames.length ? `Analyze ${validNames.length} player${validNames.length === 1 ? "" : "s"}` : "Analyze"}
             </button>
+            {running && (
+              <button type="button" class="sc-add" onClick={() => abortRef.current?.abort()}>
+                Cancel
+              </button>
+            )}
             <button type="button" class="sc-add" disabled={running} onClick={addPlayer}>
               + Add player
             </button>
@@ -751,9 +1022,10 @@ export function MrScraper() {
                 ))}
               </select>
             </label>
-            <span class="sc-muted sc-count">
-              {players.length} player{players.length === 1 ? "" : "s"}
-            </span>
+            <label class="mr-mode mr-debug-toggle" title="Show what the data layer is doing, and why a name failed">
+              <input type="checkbox" checked={debug} onChange={(e) => setDebug((e.currentTarget as HTMLInputElement).checked)} />
+              Debug
+            </label>
             <button
               type="button"
               class="sc-clear"
@@ -765,7 +1037,17 @@ export function MrScraper() {
           </div>
         </form>
 
-        {validNames.some((n) => results[n]) && <ResultsSummary usernames={validNames} results={results} />}
+        </section>
+      </aside>
+
+      <section class="mr-main" aria-label="Results">
+        {validNames.some((n) => results[n]?.status === "done") ? (
+          <ResultsSummary usernames={validNames} results={results} />
+        ) : (
+          <p class="mr-empty sc-muted">
+            {running ? "Looking players up…" : "Enter player names or UIDs on the left and run the analysis. Results appear here."}
+          </p>
+        )}
       </section>
     </main>
   );

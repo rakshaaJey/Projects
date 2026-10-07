@@ -1,5 +1,5 @@
 import { heroName, oneTrick, type PlayerAnalysis } from "./analysis.ts";
-import type { MrHeroStats } from "./api.ts";
+import type { MrHeroStats, RdTierHero } from "./api.ts";
 
 // Ban suggestions against a scouted lineup: which heroes the analyzed players
 // lean on, weighted by how strong each hero is in the current ranked meta.
@@ -50,8 +50,31 @@ export type HeroMeta = {
   matches: number;
 };
 
-/** Aggregates the hero-stats payload for one rank bracket, keyed by hero name. Mirrors the site's tier-list math. */
+/**
+ * rivalsdata.com's tier list already carries the rates for one bracket. The
+ * win rate leaves mirror matches out: with pick rates near 90% the plain win
+ * rate collapses towards 50% and says nothing about the hero's strength.
+ */
+function heroMetaFromRates(heroes: RdTierHero[]): Map<string, HeroMeta> {
+  const out = new Map<string, HeroMeta>();
+  for (const h of heroes) {
+    if (!h.hero_id) continue;
+    const hero = heroName(Number(h.hero_id));
+    const winRate = h.winrate_no_mirror ?? h.winrate;
+    out.set(hero, {
+      hero,
+      winRate: typeof winRate === "number" && Number.isFinite(winRate) ? winRate / 100 : null,
+      pickRate: (Number(h.pick_rate) || 0) / 100,
+      banRate: (Number(h.ban_rate) || 0) / 100,
+      matches: Number(h.picks) || 0,
+    });
+  }
+  return out;
+}
+
+/** The hero meta for one rank bracket, keyed by hero name. rivalsmeta.com's per-rank totals are added up here, mirroring its tier-list math. */
 export function heroMeta(stats: MrHeroStats, bracket: MetaBracket): Map<string, HeroMeta> {
+  if (stats.rates) return heroMetaFromRates(stats.rates.heroes);
   const inBracket = (rank: unknown) => bracket.ranks.includes(String(rank));
   const acc = new Map<string, { matches: number; wrMatches: number; wrWins: number; bans: number }>();
   const get = (hero: string) => {

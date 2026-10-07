@@ -365,6 +365,31 @@ export function App() {
             <hr/>
             <div class="resume-entry">
             <div>
+              <h3>
+                MR_Scraper{" "}
+                <a href="/mr_scraper/" target="_blank" rel="noopener noreferrer">
+                  (open)
+                </a>
+              </h3>
+            </div>
+            </div>
+            <div class="resume-bullets">
+              <ul>
+                <li>
+                  Built a Marvel Rivals scouting tool that looks up a full enemy lineup and shows each player's competitive match history, current and peak rank, and most-played heroes overall and per objective mode
+                </li>
+                <li>
+                  Suggests bans by weighing the lineup's hero pools against the current ranked meta, with one-trick detection and a breakdown of how each score came about
+                </li>
+                <li>
+                  Pulls from two community stats APIs behind same-origin proxies with automatic fallback, caching, and rate-limit handling; built with Preact, TypeScript and Cloudflare Pages Functions
+                </li>
+              </ul>
+            </div>
+
+            <hr/>
+            <div class="resume-entry">
+            <div>
               <h3>Integrated Case Competition - Semi Finalist</h3>
             </div>
             </div>

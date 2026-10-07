@@ -1,44 +1,50 @@
-// Data access for MR_Scraper, with two upstream sources:
+// Data access for MR_Scraper, with two upstream sources, neither needing a key:
 //
-//   PRIMARY   MarvelRivalsAPI.com (https://docs.marvelrivalsapi.com/) — documented,
-//             needs an API key (MARVELRIVALS_API_KEY, attached by the proxy, never
-//             sent to the browser). Full paginated match history per season.
-//             Requests go through `/api/mra/*` -> https://marvelrivalsapi.com/api/*.
+//   PRIMARY   rivalsdata.com's site API (undocumented). Full cursor-paginated
+//             match history per season, plus the tier-list pick/win/ban rates
+//             used by the ban suggestions. Requests go through `/api/rd/*` ->
+//             https://api.rivalsdata.com/*. The host sits behind Cloudflare and
+//             only answers requests that look like a browser; see the proxies.
 //
-//   FALLBACK  rivalsmeta.com's own site API (undocumented, no key; the same backend
-//             serves api.rivalstracker.com). Only the last 20 matches per season.
-//             Requests go through `/api/mr/*` -> https://rivalsmeta.com/api/*.
-//             Also the ONLY source of hero pick/win/ban rates (the site's tier-list
-//             data), which MarvelRivalsAPI.com does not offer, so the ban
-//             suggestions always come from here.
+//   FALLBACK  rivalsmeta.com's own site API (undocumented; the same backend
+//             serves api.rivalstracker.com). Only the last 20 matches per season,
+//             but its hero stats cover every rank and past seasons. Requests go
+//             through `/api/mr/*` -> https://rivalsmeta.com/api/*.
 //
-// Every player lookup and history fetch tries the primary first and falls back
-// when it fails for any reason other than the caller aborting (no key, 401,
-// 5xx, network error, rate limit exhausted). After a key problem the primary is
-// skipped for a while instead of failing every call.
+// Every player lookup, history fetch and hero-meta load tries the primary and
+// moves on when it fails for any reason other than the caller aborting
+// (Cloudflare 403, 5xx, network error, rate limit exhausted). After a Cloudflare
+// block the primary is skipped for a while instead of failing every call.
 //
-// See vite.config.ts (dev/preview) and functions/api/{mra,mr} (production) for the proxies.
+// MarvelRivalsAPI.com (documented, keyed) was the primary until 2026-10; it was
+// dropped because its site stopped issuing keys.
 //
-// MarvelRivalsAPI.com endpoints used:
-//   GET /v1/find-player/{username}                         -> { uid, name }
-//   GET /v2/player/{uid}                                   -> profile: rank, info.rank_game_season, isPrivate
-//   GET /v2/player/{uid}/match-history?game_mode=0&page=N&limit=40[&season=S]
-//   GET /v2/seasons                                        -> [{ season, name, starts_at, ends_at }]
+// See vite.config.ts (dev/preview) and functions/api/{rd,mr} (production) for the proxies.
+//
+// rivalsdata.com endpoints used (observed from the site and the community rivals-api client):
+//   POST /players/search          body {"name": "..."}                  -> [{aid: "<platform>_<uid>", name}, ...]
+//   POST /player                  body {"uid": N}                       -> profile: name, login_os, rank_game_season, match_history_is_visible
+//   POST /player/matches          body {"uid": N, "cursor"?: "..."}     -> {matches: [20 rows], next_cursor}; refreshes the newest page from the game
+//   POST /player/matches/cached   body {"uid": N, "season"?: S, "cursor"?} -> same shape, from the site's cache
+//   GET  /stats/tierlist?rank=diamond_plus|grandmaster_plus|celestial_plus|...  -> {last_update, heroes: [{hero_id, picks, bans, winrate, pick_rate, ban_rate, ...}]}
 // rivalsmeta.com endpoints used (observed from the site itself):
 //   POST /find-player            body {"name": "..."}   -> [{aid, name, cur_head_icon_id}, ...]
 //   GET  /player/{aid}?season=N  (no season = current)  -> profile + last 20 matches of that season
 //   GET  /heroes/stats?season=N                          -> per-rank hero pick/win/ban totals
 
 import { ApiError, requestJson, type RequestOptions } from "../shared/http.ts";
-import { seasonIdFromGameSeason, summarizeRank, type RankSummary } from "./rank.ts";
+import { summarizeRank, type RankSummary } from "./rank.ts";
+import type { MetaBracket } from "./bans.ts";
+import { isBlocked } from "./data/blocklist.ts";
 
 export { ApiError };
 export type { RequestOptions };
 
-export const MRA_PROXY_BASE = "/api/mra";
+export const RD_PROXY_BASE = "/api/rd";
 export const MR_PROXY_BASE = "/api/mr";
 
-export type Source = "marvelrivalsapi.com" | "rivalsmeta.com";
+/** The upstreams, named as the page shows them. */
+export type Source = "rivalsdata.com" | "rivalsmeta.com";
 
 export type MrPlayer = {
   uid: string;
@@ -74,7 +80,7 @@ function pickExact<T extends { name?: string }>(username: string, hits: T[]): { 
   );
 }
 
-/** One entry of a match history. Both sources use this NetEase-derived shape; only the fields we read. */
+/** One entry of a match history: the NetEase-derived shape rivalsmeta.com serves, which the other sources are brought to. Only the fields we read. */
 export type MrMatch = {
   match_uid: string;
   match_map_id: number;
@@ -94,7 +100,7 @@ export type MrMatch = {
   };
 };
 
-/** Rank data as stored on the account (identical in both sources). See rank.ts. */
+/** Rank data as stored on the account (identical in every source). See rank.ts. */
 export type RankSeasonsInfo = {
   login_os?: string;
   /** Object (or JSON string) keyed by `<login_os>0010<season>`; each value a rank entry, possibly JSON-encoded. */
@@ -110,43 +116,75 @@ export type MrPlayerSeason = {
   visibility?: { overview?: boolean; career_stats?: boolean; match_history?: boolean };
 };
 
-/** MarvelRivalsAPI.com v2 profile response. Only the fields we read. */
-export type MraProfile = {
+/** rivalsdata.com profile (POST /player). Only the fields we read; the rank data is the same NetEase shape as everywhere else. */
+export type RdProfile = RankSeasonsInfo & {
   uid?: string | number;
   name?: string;
-  isPrivate?: boolean;
-  player?: {
-    uid?: string | number;
-    name?: string;
-    isPrivate?: boolean;
-    rank?: { rank?: string; score?: string | number; peak_rank?: { rank?: string; score?: string | number } };
-    info?: RankSeasonsInfo;
-  };
+  /**
+   * Despite the name, observed as 1 on exactly the accounts whose live history the site refuses as
+   * private, and 0 on the open ones (2026-10-07). Not relied on: privacy is read from that refusal.
+   */
+  match_history_is_visible?: number | boolean;
 };
 
-export type MraSeason = { season: string | number; name?: string; starts_at?: string; ends_at?: string };
+/** One rivalsdata.com match-history row (POST /player/matches). Only the fields we read. */
+type RdMatch = {
+  match_uid?: string;
+  is_win?: boolean;
+  game_mode_id?: number;
+  game_play_mode_id?: number;
+  /** Rank-season id (20 = Season 10), the same numbering rank.ts uses. */
+  season?: number;
+  timestamp?: number; // Unix seconds
+  kills?: number;
+  deaths?: number;
+  assists?: number;
+  hero_id?: number;
+  map_id?: number;
+  winner_camp?: number;
+};
 
-/** Season-wide hero totals split by rank bucket ("1" Bronze ... "9" One Above All; "0" = everything). Only the fields we read. */
+/** One hero of rivalsdata.com's tier list (GET /stats/tierlist). Rates are percentages, 0-100. */
+export type RdTierHero = {
+  hero_id: number;
+  picks?: number;
+  bans?: number;
+  total_games?: number;
+  winrate?: number;
+  winrate_no_mirror?: number;
+  pick_rate?: number;
+  ban_rate?: number;
+};
+
+/**
+ * Hero meta for the ban suggestions, in one of two shapes:
+ *   - rivalsmeta.com: season-wide totals split by rank bucket ("1" Bronze ... "9" One
+ *     Above All; "0" = everything), which bans.ts adds up for the chosen bracket;
+ *   - rivalsdata.com: `rates`, already worked out for one bracket (current season only).
+ * Only the fields we read.
+ */
 export type MrHeroStats = {
+  source?: Source;
   season?: number;
   timestamp?: number | string;
   ban_slots_per_match?: number;
   ban_matches?: { rank: string | number; matches: number }[];
   bans?: { rank: string | number; bans: { hero_id: number; bans: number }[] }[];
   heroes?: { rank: string | number; heroes: { hero_id: number; matches?: number; wins?: number; wr_matches?: number; wr_wins?: number }[] }[];
+  rates?: { bracket: string; heroes: RdTierHero[] };
 };
 
 // ---------------------------------------------------------------------------
 // Errors
 // ---------------------------------------------------------------------------
 
-const FRIENDLY_MRA: Record<number, string> = {
-  401: "MarvelRivalsAPI.com rejected the API key. Locally, set MARVELRIVALS_API_KEY in .env and restart the dev server; in production, set it in the Cloudflare project's variables and redeploy.",
-  404: "Player not found on MarvelRivalsAPI.com.",
-  500: "MarvelRivalsAPI.com key is not configured for this deployment (or its server errored).",
-  502: "MarvelRivalsAPI.com is not responding right now.",
-  503: "MarvelRivalsAPI.com is not responding right now.",
-  504: "MarvelRivalsAPI.com is not responding right now.",
+const FRIENDLY_RD: Record<number, string> = {
+  // The host is behind Cloudflare; a 403 with an HTML body is its bot check turning the proxy away.
+  403: "rivalsdata.com is refusing requests from this server right now (Cloudflare check).",
+  404: "Player not found on rivalsdata.com.",
+  502: "rivalsdata.com is not responding right now.",
+  503: "rivalsdata.com is not responding right now.",
+  504: "rivalsdata.com is not responding right now.",
 };
 
 const FRIENDLY_MR: Record<number, string> = {
@@ -168,26 +206,60 @@ const extractError = (body: unknown): string | undefined => {
 const isAbort = (err: unknown) => err instanceof DOMException && err.name === "AbortError";
 
 // ---------------------------------------------------------------------------
+// Debug log: a running account of what this module is doing (requests, cache
+// hits, retries, fallbacks), shown by the page's debug terminal.
+// ---------------------------------------------------------------------------
+
+export type DebugEntry = { at: number; text: string };
+
+const DEBUG_LIMIT = 400;
+const debugEntries: DebugEntry[] = [];
+const debugListeners = new Set<(entries: readonly DebugEntry[]) => void>();
+
+export function debugLog(text: string): void {
+  debugEntries.push({ at: Date.now(), text });
+  if (debugEntries.length > DEBUG_LIMIT) debugEntries.splice(0, debugEntries.length - DEBUG_LIMIT);
+  for (const listener of debugListeners) listener(debugEntries);
+}
+
+/** Calls `listener` with the whole log now and after every new entry; returns the unsubscribe. */
+export function subscribeDebug(listener: (entries: readonly DebugEntry[]) => void): () => void {
+  listener(debugEntries);
+  debugListeners.add(listener);
+  return () => void debugListeners.delete(listener);
+}
+
+export function clearDebugLog(): void {
+  debugEntries.length = 0;
+  for (const listener of debugListeners) listener(debugEntries);
+}
+
+const statusOf = (err: unknown) => (err instanceof ApiError ? String(err.status) : isAbort(err) ? "aborted" : "network error");
+const brief = (json: unknown) => (json === undefined ? "" : ` ${JSON.stringify(json).slice(0, 80)}`);
+
+/** For a player on the blocklist (data/blocklist.ts); 451 so it is never mistaken for an outage or a "not found". */
+const blockedError = (name: string) => new ApiError(`"${name}" is not available on this site.`, 451);
+
+// ---------------------------------------------------------------------------
 // Being gentle with the upstreams, and riding out their outages:
 //   - requests are spaced at least MIN_GAP_MS apart;
 //   - rivalsmeta's outage 400 is treated like a rate limit and retried after a
-//     growing pause (MarvelRivalsAPI.com signals limits with a real 429, which
-//     the shared client already retries using Retry-After);
+//     growing pause, and rivalsdata's passing 502 is retried once (a real 429
+//     from either is retried by the shared client using Retry-After);
 //   - responses are cached in localStorage, so re-running an analysis or adding
 //     seasons only fetches what is new. Finished seasons never change.
 // ---------------------------------------------------------------------------
 
 const MIN_GAP_MS = 1200;
 const THROTTLE_RETRY_WAITS_MS = [30_000, 60_000, 90_000];
-/** After a key/auth failure on the primary, skip it for this long instead of failing every call. */
-const PRIMARY_BACKOFF_MS = 10 * 60 * 1000;
+/** After an auth-type failure (bad key, Cloudflare block) a source is skipped for this long instead of failing every call. */
+const SOURCE_BACKOFF_MS = 10 * 60 * 1000;
 
 const CACHE_PREFIX = "mr_scraper:cache.v1:";
 const TTL = {
   findPlayer: 24 * 60 * 60 * 1000,
   currentSeason: 10 * 60 * 1000,
   pastSeason: 7 * 24 * 60 * 60 * 1000,
-  seasons: 24 * 60 * 60 * 1000,
   heroStats: 6 * 60 * 60 * 1000,
 } as const;
 
@@ -218,6 +290,7 @@ function sleep(ms: number, signal?: AbortSignal): Promise<void> {
 
 /** Counts down `ms`, reporting the seconds left once a second through onRateLimit. */
 async function countdown(ms: number, attempt: number, options: RequestOptions): Promise<void> {
+  debugLog(`… rivalsmeta is in one of its outages; waiting ${Math.round(ms / 1000)}s before retry ${attempt} of ${THROTTLE_RETRY_WAITS_MS.length}`);
   const deadline = Date.now() + ms;
   while (true) {
     const left = Math.ceil((deadline - Date.now()) / 1000);
@@ -232,7 +305,9 @@ function cacheRead<T>(key: string, ttlMs: number): T | undefined {
     const raw = localStorage.getItem(CACHE_PREFIX + key);
     if (!raw) return undefined;
     const { at, value } = JSON.parse(raw) as { at: number; value: T };
-    return Date.now() - at < ttlMs ? value : undefined;
+    if (Date.now() - at >= ttlMs) return undefined;
+    debugLog(`cache hit ${key} (${Math.round((Date.now() - at) / 60000)} min old)`);
+    return value;
   } catch {
     return undefined;
   }
@@ -269,21 +344,41 @@ export function clearApiCache(): void {
 
 type JsonConfig = RequestOptions & { method?: "GET" | "POST"; json?: unknown };
 
-/** GET/POST against the MarvelRivalsAPI.com proxy (spaced out; 429 handled by the shared client). */
-async function mraRequest<T>(path: string, config: JsonConfig = {}): Promise<T> {
-  await spaceOut(config.signal);
-  const { body } = await requestJson<T>(`${MRA_PROXY_BASE}${path}`, { ...config, friendly: FRIENDLY_MRA, extractError });
-  return body;
+/** rivalsdata.com's origin drops the odd request with a bare 502 (observed 2026-10-07); one short pause and retry rides that out. */
+const RD_RETRY_WAIT_MS = 2500;
+
+/** GET/POST against the rivalsdata.com proxy: spaced out, a passing 5xx retried once, 429 handled by the shared client. */
+async function rdRequest<T>(path: string, config: JsonConfig = {}): Promise<T> {
+  for (let attempt = 0; ; attempt++) {
+    await spaceOut(config.signal);
+    const started = Date.now();
+    debugLog(`→ rivalsdata ${config.method ?? "GET"} ${path}${brief(config.json)}${attempt ? ` (retry ${attempt})` : ""}`);
+    try {
+      const { status, body } = await requestJson<T>(`${RD_PROXY_BASE}${path}`, { ...config, friendly: FRIENDLY_RD, extractError });
+      debugLog(`← rivalsdata ${status} in ${Date.now() - started} ms`);
+      return body;
+    } catch (err) {
+      debugLog(`✗ rivalsdata ${statusOf(err)} after ${Date.now() - started} ms: ${describe(err)}`);
+      const flaky = err instanceof ApiError && err.status >= 502 && err.status <= 504;
+      if (!flaky || attempt >= 1) throw err;
+      debugLog(`… passing 5xx; waiting ${RD_RETRY_WAIT_MS / 1000}s and retrying once`);
+      await sleep(RD_RETRY_WAIT_MS, config.signal);
+    }
+  }
 }
 
 /** GET/POST against the rivalsmeta.com proxy: spaced out, and an outage 400 is retried like a 429. */
 async function mrRequest<T>(path: string, config: JsonConfig = {}): Promise<T> {
   for (let attempt = 0; ; attempt++) {
     await spaceOut(config.signal);
+    const started = Date.now();
+    debugLog(`→ rivalsmeta ${config.method ?? "GET"} ${path}${brief(config.json)}${attempt ? ` (retry ${attempt})` : ""}`);
     try {
-      const { body } = await requestJson<T>(`${MR_PROXY_BASE}${path}`, { ...config, friendly: FRIENDLY_MR, extractError });
+      const { status, body } = await requestJson<T>(`${MR_PROXY_BASE}${path}`, { ...config, friendly: FRIENDLY_MR, extractError });
+      debugLog(`← rivalsmeta ${status} in ${Date.now() - started} ms`);
       return body;
     } catch (err) {
+      debugLog(`✗ rivalsmeta ${statusOf(err)} after ${Date.now() - started} ms: ${describe(err)}`);
       const throttled = err instanceof ApiError && err.status === 400;
       if (!throttled || attempt >= THROTTLE_RETRY_WAITS_MS.length) throw err;
       await countdown(THROTTLE_RETRY_WAITS_MS[attempt], attempt + 1, config);
@@ -292,66 +387,75 @@ async function mrRequest<T>(path: string, config: JsonConfig = {}): Promise<T> {
 }
 
 // ---------------------------------------------------------------------------
-// Primary/fallback plumbing
+// Source chain
 // ---------------------------------------------------------------------------
 
-let primaryDownUntil = 0;
-let primaryDownReason = "";
+type Attempt<T> = { source: Source; run: () => Promise<T> };
 
-/** Whether the primary should be attempted right now. */
-export function primaryAvailable(): boolean {
-  return Date.now() >= primaryDownUntil;
-}
+const sourceDown = new Map<Source, { until: number; reason: string }>();
 
-function notePrimaryFailure(err: unknown): void {
-  // A bad or missing key will not fix itself within the session; back off so every player is not delayed by it.
-  if (err instanceof ApiError && (err.status === 401 || err.status === 403 || err.status === 500)) {
-    primaryDownUntil = Date.now() + PRIMARY_BACKOFF_MS;
-    primaryDownReason = err.message;
-  }
+function noteFailure(source: Source, err: unknown): void {
+  if (!(err instanceof ApiError)) return;
+  // A Cloudflare block will not fix itself within minutes; back off so every player is not delayed by it.
+  // rivalsdata.com also answers 403 for one player's private history, which says nothing about the next player.
+  const blocked = err.status === 403 && (source !== "rivalsdata.com" || err.message === FRIENDLY_RD[403]);
+  if (blocked) sourceDown.set(source, { until: Date.now() + SOURCE_BACKOFF_MS, reason: err.message });
 }
 
 const describe = (err: unknown) => (err instanceof Error ? err.message : String(err));
 
 /**
- * Runs `primary`, and on any failure other than an abort runs `fallback`.
- * If both fail, the error names both sources.
+ * Runs the attempts in order and returns the first that succeeds. A source in
+ * backoff is skipped; an abort stops everything; any other failure moves on.
+ * When every source fails the error names each one, unless the last answer
+ * was a plain "not found", which is an answer rather than an outage.
  */
-async function withFallback<T>(primary: () => Promise<T>, fallback: () => Promise<T>, label: string): Promise<T> {
-  let primaryError: unknown = primaryDownReason ? new ApiError(primaryDownReason, 401) : null;
-  if (primaryAvailable()) {
+async function firstWorking<T>(attempts: Attempt<T>[], label: string): Promise<T> {
+  const failures: string[] = [];
+  let last: unknown = null;
+  for (const { source, run } of attempts) {
+    const down = sourceDown.get(source);
+    if (down && Date.now() < down.until) {
+      failures.push(`${source}: ${down.reason}`);
+      debugLog(`${label}: skipping ${source}, benched for another ${Math.ceil((down.until - Date.now()) / 60000)} min (${down.reason})`);
+      continue;
+    }
     try {
-      return await primary();
+      return await run();
     } catch (err) {
       if (isAbort(err)) throw err;
-      notePrimaryFailure(err);
-      primaryError = err;
+      noteFailure(source, err);
+      last = err;
+      failures.push(`${source}: ${describe(err)}`);
+      // The page only shows the source that answered; leave a trace of why the earlier ones did not.
+      console.warn(`[mr_scraper] ${label}: ${source} failed, trying the next source. ${describe(err)}`);
+      debugLog(`${label}: ${source} failed${sourceDown.has(source) ? " and is benched for 10 min" : ""}; trying the next source`);
     }
   }
-  try {
-    return await fallback();
-  } catch (err) {
-    if (isAbort(err)) throw err;
-    const status = err instanceof ApiError ? err.status : 0;
-    // "Not found" is an answer, not an outage: report it plainly.
-    if (status === 404) throw err;
-    throw new ApiError(`${label}: MarvelRivalsAPI.com failed (${describe(primaryError)}) and so did rivalsmeta.com (${describe(err)}).`, status);
-  }
+  if (last instanceof ApiError && last.status === 404) throw last;
+  throw new ApiError(`${label}: ${failures.join("; ")}`, last instanceof ApiError ? last.status : 0);
 }
 
 // ---------------------------------------------------------------------------
 // Player lookup
 // ---------------------------------------------------------------------------
 
-async function findPlayerMra(username: string, options: RequestOptions): Promise<MrPlayer> {
-  const body = await mraRequest<{ uid?: string | number; name?: string; player?: { uid?: string | number; name?: string } }>(
-    `/v1/find-player/${encodeURIComponent(username)}`,
-    options,
-  );
-  const uid = body.uid ?? body.player?.uid;
-  if (uid === undefined || uid === null || uid === "") throw new ApiError(`No player named "${username}" was found.`, 404);
-  const { hit, caseInsensitive } = pickExact(username, [{ uid, name: body.name ?? body.player?.name }]);
-  return { uid: String(hit.uid), name: hit.name ?? username, candidates: 1, source: "marvelrivalsapi.com", caseInsensitive };
+type RdSearchHit = { aid?: string | number; uid?: string | number; name?: string };
+
+/** The search's `aid` is "<platform>_<uid>" (e.g. "11001_1979499089"); the game's uid is the trailing number. */
+function rdUid(hit: RdSearchHit): string | null {
+  const tail = String(hit.uid ?? hit.aid ?? "").match(/\d+$/)?.[0];
+  return tail && UID_PATTERN.test(tail) ? tail : null;
+}
+
+async function findPlayerRd(username: string, options: RequestOptions): Promise<MrPlayer> {
+  const body = await rdRequest<RdSearchHit[] | { players?: RdSearchHit[] }>(`/players/search`, { ...options, method: "POST", json: { name: username } });
+  const hits = Array.isArray(body) ? body : (body?.players ?? []);
+  if (hits.length === 0) throw new ApiError(`No player named "${username}" was found.`, 404);
+  const { hit, caseInsensitive } = pickExact(username, hits);
+  const uid = rdUid(hit);
+  if (!uid) throw new ApiError(`rivalsdata.com returned an unreadable account id for "${username}".`, 502);
+  return { uid, name: hit.name ?? username, candidates: hits.length, source: "rivalsdata.com", caseInsensitive };
 }
 
 type FindPlayerHit = { aid: string | number; name: string };
@@ -366,18 +470,21 @@ async function findPlayerMr(username: string, options: RequestOptions): Promise<
 
 /**
  * Resolves a username to a player id (the uid is the game's own, identical in
- * both sources). A numeric input is taken as the UID itself, no search needed;
+ * every source). A numeric input is taken as the UID itself, no search needed;
  * the display name then comes from the profile. Names must match exactly.
  */
 export async function findPlayer(username: string, options: RequestOptions = {}): Promise<MrPlayer> {
   const trimmed = username.trim();
+  if (isBlocked(trimmed)) throw blockedError(trimmed);
   if (UID_PATTERN.test(trimmed)) return { uid: trimmed, name: trimmed, candidates: 1, source: "uid" };
   const cacheKey = `find:${trimmed}`;
   const cached = cacheRead<MrPlayer>(cacheKey, TTL.findPlayer);
   if (cached?.source) return cached;
-  const player = await withFallback(
-    () => findPlayerMra(username, options),
-    () => findPlayerMr(username, options),
+  const player = await firstWorking(
+    [
+      { source: "rivalsdata.com", run: () => findPlayerRd(username, options) },
+      { source: "rivalsmeta.com", run: () => findPlayerMr(username, options) },
+    ],
     `Looking up "${username}"`,
   );
   cacheWrite(cacheKey, player);
@@ -385,7 +492,7 @@ export async function findPlayer(username: string, options: RequestOptions = {})
 }
 
 // ---------------------------------------------------------------------------
-// rivalsmeta.com history (fallback)
+// rivalsmeta.com history (last resort)
 // ---------------------------------------------------------------------------
 
 /**
@@ -419,6 +526,7 @@ export type RecentMatches = {
   matches: MrMatch[];
   /** Rank-season ids covered (see rank.ts seasonLabel), newest first. */
   seasons: number[];
+  /** The player hides their battle history in-game. Any matches present were indexed by the source before that, so they can be stale. */
   historyPrivate: boolean;
   rank: RankSummary;
   source: Source;
@@ -470,133 +578,214 @@ async function fetchRecentMatchesMr(uid: string, options: HistoryOptions): Promi
 }
 
 // ---------------------------------------------------------------------------
-// MarvelRivalsAPI.com history (primary)
+// rivalsdata.com history (first choice)
 // ---------------------------------------------------------------------------
 
-const MRA_PAGE_SIZE = 40;
-/** Pages per season; 3 x 40 = 120 matches, plenty for a hero breakdown. */
-const MRA_MAX_PAGES = 3;
+/** Rows per page are fixed upstream at 20; 6 pages = 120 matches per season, plenty for a hero breakdown. */
+const RD_MAX_PAGES = 6;
 
-/** The season list, newest first. */
-export async function fetchSeasonsMra(options: RequestOptions = {}): Promise<MraSeason[]> {
-  const cached = cacheRead<MraSeason[]>("mra:seasons", TTL.seasons);
+/**
+ * The profile (cached as briefly as the current season's history), or a 404
+ * when the site has never seen the uid: it answers 200 with an empty profile.
+ */
+async function fetchRdProfile(uid: string, options: RequestOptions): Promise<RdProfile> {
+  const cacheKey = `rd:profile:${uid}`;
+  const cached = cacheRead<RdProfile>(cacheKey, TTL.currentSeason);
   if (cached) return cached;
-  const body = await mraRequest<{ seasons?: MraSeason[] } | MraSeason[]>(`/v2/seasons`, options);
-  const list = (Array.isArray(body) ? body : (body.seasons ?? [])).filter((s) => s && s.season !== undefined && s.season !== null);
-  const time = (s: MraSeason) => (s.starts_at ? Date.parse(s.starts_at) : NaN);
-  list.sort((a, b) => {
-    const ta = time(a);
-    const tb = time(b);
-    if (Number.isFinite(ta) && Number.isFinite(tb)) return tb - ta;
-    return (Number(b.season) || 0) - (Number(a.season) || 0);
-  });
-  cacheWrite("mra:seasons", list);
-  return list;
+  const body = await rdRequest<RdProfile>(`/player`, { ...options, method: "POST", json: { uid: Number(uid) } });
+  const ranks = body?.rank_game_season;
+  const known = Boolean(body?.name) || (typeof ranks === "string" ? ranks.length > 2 : Boolean(ranks && Object.keys(ranks).length > 0));
+  if (!known) throw new ApiError(FRIENDLY_RD[404], 404);
+  // Keep only what the page reads; the profile also carries cosmetics and faction data.
+  const slim: RdProfile = { uid: body.uid, name: body.name, login_os: body.login_os, rank_game_season: body.rank_game_season, match_history_is_visible: body.match_history_is_visible };
+  cacheWrite(cacheKey, slim);
+  return slim;
 }
 
-/** Brings a v2 match-history entry to the shared shape (v2 sometimes uses `map_id`/`season`). */
-function normalizeMraMatch(raw: Record<string, unknown>): MrMatch | null {
-  const uid = raw.match_uid ?? raw.match_id;
-  if (!uid) return null;
-  const player = (raw.match_player ?? raw.player_performance ?? {}) as MrMatch["match_player"] & { hero_id?: number; hero_name?: string };
-  const hero = player.player_hero ?? (player.hero_id ? { hero_id: Number(player.hero_id), hero_name: player.hero_name } : undefined);
+/** Brings a rivalsdata.com row to the shared shape. */
+function normalizeRdMatch(raw: RdMatch): MrMatch | null {
+  if (!raw?.match_uid) return null;
+  const heroId = Number(raw.hero_id) || 0;
   return {
-    match_uid: String(uid),
-    match_map_id: Number(raw.match_map_id ?? raw.map_id) || 0,
-    match_season: String(raw.match_season ?? raw.season ?? ""),
-    match_time_stamp: Number(raw.match_time_stamp) || 0,
-    play_mode_id: Number(raw.play_mode_id) || 0,
+    match_uid: String(raw.match_uid),
+    match_map_id: Number(raw.map_id) || 0,
+    match_season: raw.season !== undefined && raw.season !== null ? String(raw.season) : "",
+    match_time_stamp: Number(raw.timestamp) || 0,
+    play_mode_id: Number(raw.game_play_mode_id) || 0,
     game_mode_id: Number(raw.game_mode_id) || 0,
-    match_winner_side: raw.match_winner_side !== undefined ? Number(raw.match_winner_side) : raw.winner_side !== undefined ? Number(raw.winner_side) : undefined,
-    match_player: { ...player, player_hero: hero },
+    match_winner_side: raw.winner_camp !== undefined ? Number(raw.winner_camp) : undefined,
+    match_player: {
+      k: raw.kills,
+      d: raw.deaths,
+      a: raw.assists,
+      is_win: typeof raw.is_win === "boolean" ? raw.is_win : undefined,
+      player_hero: heroId ? { hero_id: heroId } : undefined,
+    },
   };
 }
 
-/** Fetches up to MRA_MAX_PAGES pages of one season's history across every game mode. Omit `season` for the current one. */
-async function fetchMraSeasonMatches(uid: string, season: string | undefined, options: RequestOptions): Promise<MrMatch[]> {
-  const cacheKey = `mra:history:${uid}:${season ?? "current"}`;
-  const cached = cacheRead<MrMatch[]>(cacheKey, season === undefined ? TTL.currentSeason : TTL.pastSeason);
-  if (cached) return cached;
-  const { matches, add } = collector();
-  for (let page = 1; page <= MRA_MAX_PAGES; page++) {
-    const query = new URLSearchParams({ game_mode: "0", page: String(page), limit: String(MRA_PAGE_SIZE) });
-    if (season !== undefined) query.set("season", season);
-    const body = await mraRequest<{ match_history?: Record<string, unknown>[]; matches?: Record<string, unknown>[]; pagination?: { has_more?: boolean } }>(
-      `/v2/player/${encodeURIComponent(uid)}/match-history?${query}`,
-      options,
-    );
-    const batch = (body.match_history ?? body.matches ?? []).map(normalizeMraMatch).filter((m): m is MrMatch => m !== null);
-    add(batch);
-    const hasMore = body.pagination?.has_more ?? batch.length >= MRA_PAGE_SIZE;
-    if (!hasMore || batch.length === 0) break;
-  }
-  cacheWrite(cacheKey, matches);
-  return matches;
+type RdSeasonHistory = {
+  matches: MrMatch[];
+  /** True when the live endpoint refused the history as private; the matches then come from the site's cache. */
+  historyPrivate: boolean;
+};
+
+/** The live endpoint answers 403 with {"error": "match history is private"} for accounts that hide their battle history in-game. */
+const isRdPrivate = (err: unknown) => err instanceof ApiError && err.status === 403 && /private/i.test(err.message);
+
+/** One page of history, following the site's cursor. */
+async function fetchRdHistoryPage(path: string, uid: string, season: number | undefined, cursor: string | undefined, options: RequestOptions) {
+  const json: Record<string, unknown> = { uid: Number(uid) };
+  if (season !== undefined) json.season = season;
+  if (cursor) json.cursor = cursor;
+  return rdRequest<{ matches?: RdMatch[]; next_cursor?: string | null }>(path, { ...options, method: "POST", json });
 }
 
-async function fetchRecentMatchesMra(uid: string, options: HistoryOptions): Promise<RecentMatches> {
-  const { seasonsBack = 0, onSeason, ...requestOptions } = options;
-  const profile = await mraRequest<MraProfile>(`/v2/player/${encodeURIComponent(uid)}`, requestOptions);
-  const info = profile.player?.info;
-  const rank = summarizeRank({ player: { info } });
-  const historyPrivate = Boolean(profile.isPrivate ?? profile.player?.isPrivate);
-
+/**
+ * Fetches up to RD_MAX_PAGES pages of one season's history. Omit `season` for
+ * the current one: that starts at the live endpoint, which refreshes the
+ * player's newest page from the game before answering (later pages come from
+ * the site's cache). A history hidden in-game is refused there, in which case
+ * the cache still holds what the site indexed before, and that is used
+ * instead. Finished seasons are read from the cache directly.
+ */
+async function fetchRdSeasonMatches(uid: string, season: number | undefined, options: RequestOptions): Promise<RdSeasonHistory> {
+  const cacheKey = `rd:history:${uid}:${season ?? "current"}`;
+  const cached = cacheRead<RdSeasonHistory>(cacheKey, season === undefined ? TTL.currentSeason : TTL.pastSeason);
+  if (cached) return cached;
+  let path = season === undefined ? "/player/matches" : "/player/matches/cached";
+  let historyPrivate = false;
   const { matches, add } = collector();
-  add(await fetchMraSeasonMatches(uid, undefined, requestOptions));
-  // Which rank-season the current history belongs to: from the matches, else the account's newest rank entry.
-  let current = seasonIdFromGameSeason(matches[0]?.match_season) ?? rank.current?.season ?? null;
-  const seasons: number[] = current !== null ? [current] : [];
-  onSeason?.(current, matches.length, "marvelrivalsapi.com");
+  let cursor: string | undefined;
+  for (let page = 0; page < RD_MAX_PAGES; page++) {
+    let body: Awaited<ReturnType<typeof fetchRdHistoryPage>>;
+    try {
+      body = await fetchRdHistoryPage(path, uid, season, cursor, options);
+    } catch (err) {
+      if (!isRdPrivate(err) || path !== "/player/matches") throw err;
+      historyPrivate = true;
+      path = "/player/matches/cached";
+      debugLog("rivalsdata refused the live history as private; reading what it cached before");
+      body = await fetchRdHistoryPage(path, uid, season, cursor, options);
+    }
+    const batch = (body.matches ?? []).map(normalizeRdMatch).filter((m): m is MrMatch => m !== null);
+    add(batch);
+    cursor = body.next_cursor ?? undefined;
+    if (!cursor || batch.length === 0) break;
+  }
+  const result = { matches, historyPrivate };
+  cacheWrite(cacheKey, result);
+  return result;
+}
 
-  if (seasonsBack > 0) {
-    const list = await fetchSeasonsMra(requestOptions);
-    // Everything older than the current season, newest first.
-    const currentIndex = current === null ? 0 : Math.max(0, list.findIndex((s) => seasonIdFromGameSeason(s.season) === current));
-    const earlier = list.slice(currentIndex + 1, currentIndex + 1 + seasonsBack);
-    for (const s of earlier) {
-      const batch = await fetchMraSeasonMatches(uid, String(s.season), requestOptions);
-      add(batch);
-      const id = seasonIdFromGameSeason(s.season) ?? seasonIdFromGameSeason(batch[0]?.match_season);
-      if (id !== null) {
-        seasons.push(id);
-        if (current === null) current = id;
-      }
-      onSeason?.(id, matches.length, "marvelrivalsapi.com");
+async function fetchRecentMatchesRd(uid: string, options: HistoryOptions): Promise<RecentMatches> {
+  const { seasonsBack = 0, onSeason, ...requestOptions } = options;
+  const profile = await fetchRdProfile(uid, requestOptions);
+  const rank = summarizeRank({ player: { info: { login_os: profile.login_os, rank_game_season: profile.rank_game_season } } });
+  const { matches, add } = collector();
+  const latest = await fetchRdSeasonMatches(uid, undefined, requestOptions);
+  add(latest.matches);
+  // Without a season filter the site answers with the newest season only, numbered as a rank-season id.
+  const current = (Number(matches[0]?.match_season) || null) ?? rank.current?.season ?? null;
+  const seasons: number[] = current !== null ? [current] : [];
+  onSeason?.(current, matches.length, "rivalsdata.com");
+  if (current !== null) {
+    for (let k = 1; k <= seasonsBack && current - k >= 1; k++) {
+      const season = current - k;
+      add((await fetchRdSeasonMatches(uid, season, requestOptions)).matches);
+      seasons.push(season);
+      onSeason?.(season, matches.length, "rivalsdata.com");
     }
   }
-  return { name: profile.name ?? profile.player?.name, matches, seasons, historyPrivate, rank, source: "marvelrivalsapi.com" };
+  return { name: profile.name || undefined, matches, seasons, historyPrivate: latest.historyPrivate, rank, source: "rivalsdata.com" };
 }
 
 /**
  * Fetches the current season's matches plus `seasonsBack` earlier seasons,
- * newest first and de-duplicated, from MarvelRivalsAPI.com (up to 120 per
- * season) or, when that fails, from rivalsmeta.com (last 20 per season).
+ * newest first and de-duplicated: from rivalsdata.com (up to 120 per season),
+ * else rivalsmeta.com (last 20).
  */
 export async function fetchRecentMatches(uid: string, options: HistoryOptions = {}): Promise<RecentMatches> {
-  return withFallback(
-    () => fetchRecentMatchesMra(uid, options),
-    () => fetchRecentMatchesMr(uid, options),
+  const result = await firstWorking(
+    [
+      { source: "rivalsdata.com", run: () => fetchRecentMatchesRd(uid, options) },
+      { source: "rivalsmeta.com", run: () => fetchRecentMatchesMr(uid, options) },
+    ],
     "Fetching match history",
   );
+  // A blocked player looked up by UID is only recognisable once the profile has named them.
+  if (isBlocked(result.name)) throw blockedError(result.name as string);
+  return result;
 }
 
 // ---------------------------------------------------------------------------
-// Hero meta (rivalsmeta.com only)
+// Hero meta: rivalsdata.com's tier list first, rivalsmeta.com's hero stats after
 // ---------------------------------------------------------------------------
 
-/** Fetches the season's hero statistics (pick, win and ban totals per rank bucket). */
+/**
+ * rivalsdata.com publishes its tier list per rank bracket, and only from
+ * Diamond up (diamond, diamond_plus, grandmaster, grandmaster_plus, celestial,
+ * celestial_plus, eternity_plus). The page's "all ranks" bracket therefore maps
+ * to the site's default, Diamond+, and the returned label says so.
+ */
+function rdBracket(bracket: MetaBracket): { rank: string; label: string } {
+  const lowest = Math.min(...bracket.ranks.map(Number));
+  if (lowest >= 7) return { rank: "celestial_plus", label: "Celestial+" };
+  if (lowest >= 6) return { rank: "grandmaster_plus", label: "Grandmaster+" };
+  return { rank: "diamond_plus", label: "Diamond+" };
+}
+
+/** Fetches rivalsdata.com's current-season tier list for the bracket closest to `bracket`. */
+async function fetchHeroStatsRd(bracket: MetaBracket, options: RequestOptions): Promise<MrHeroStats> {
+  const { rank, label } = rdBracket(bracket);
+  const body = await rdRequest<{ last_update?: number; heroes?: RdTierHero[] }>(`/stats/tierlist?rank=${encodeURIComponent(rank)}`, options);
+  if (!body.heroes?.length) throw new ApiError("rivalsdata.com returned an empty tier list.", 502);
+  // Keep only what the ban recommender reads.
+  const heroes = body.heroes.map(({ hero_id, picks, bans, total_games, winrate, winrate_no_mirror, pick_rate, ban_rate }) => ({
+    hero_id,
+    picks,
+    bans,
+    total_games,
+    winrate,
+    winrate_no_mirror,
+    pick_rate,
+    ban_rate,
+  }));
+  return { source: "rivalsdata.com", timestamp: body.last_update, rates: { bracket: label, heroes } };
+}
+
+/** Fetches rivalsmeta.com's hero statistics for a season (pick, win and ban totals per rank bucket). */
 export async function fetchHeroStats(season: number, options: RequestOptions = {}): Promise<MrHeroStats> {
   const body = await mrRequest<MrHeroStats>(`/heroes/stats?season=${encodeURIComponent(String(season))}`, options);
   // Keep only what the ban recommender reads; the payload also carries map and team-up tables.
-  return { season: body.season, timestamp: body.timestamp, ban_slots_per_match: body.ban_slots_per_match, ban_matches: body.ban_matches, bans: body.bans, heroes: body.heroes };
+  return {
+    source: "rivalsmeta.com",
+    season: body.season,
+    timestamp: body.timestamp,
+    ban_slots_per_match: body.ban_slots_per_match,
+    ban_matches: body.ban_matches,
+    bans: body.bans,
+    heroes: body.heroes,
+  };
 }
 
-/** fetchHeroStats with a per-season cache, so re-running the analysis does not refetch a 200 KB payload. */
-export async function loadHeroStats(season: number, options: RequestOptions = {}): Promise<MrHeroStats> {
-  const cacheKey = `heroStats:${season}`;
+/**
+ * Hero meta for the ban suggestions, cached per season and bracket so
+ * re-running the analysis does not refetch it. rivalsdata.com only publishes
+ * the current season, which is what a lineup's newest season nearly always is;
+ * rivalsmeta.com covers any season and every rank, and is used when it fails.
+ */
+export async function loadHeroStats(season: number, bracket: MetaBracket, options: RequestOptions = {}): Promise<MrHeroStats> {
+  const cacheKey = `heroStats:${season}:${rdBracket(bracket).rank}`;
   const cached = cacheRead<MrHeroStats>(cacheKey, TTL.heroStats);
   if (cached) return cached;
-  const stats = await fetchHeroStats(season, options);
+  const stats = await firstWorking(
+    [
+      { source: "rivalsdata.com", run: () => fetchHeroStatsRd(bracket, options) },
+      { source: "rivalsmeta.com", run: () => fetchHeroStats(season, options) },
+    ],
+    "Loading the hero meta",
+  );
   cacheWrite(cacheKey, stats);
   return stats;
 }
