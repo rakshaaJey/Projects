@@ -12,7 +12,9 @@ import {
   type MrMatch,
   type MrPlayer,
 } from "./api.ts";
-import { bracketFor, heroMeta, metaFactor, pct, recommendBans, type BanSuggestion, type MetaBracket } from "./bans.ts";
+import { bracketFor, heroMeta, metaFactor, pct, recommendBans, teamPlaystyle, type BanSuggestion, type MetaBracket, type TeamPlaystyle } from "./bans.ts";
+import { PLAYSTYLE_LABELS } from "./data/playstyles.ts";
+import { ROSTERS } from "./data/rosters.ts";
 import { heroPortrait } from "./data/portraits.ts";
 import { rankBadge } from "./data/ranks.ts";
 import {
@@ -47,6 +49,8 @@ const STORE = {
   modes: "mr_scraper:modes.v1",
   selected: "mr_scraper:selected.v1",
   debug: "mr_scraper:debug.v1",
+  useRosters: "mr_scraper:useRosters.v1",
+  rosterTeam: "mr_scraper:rosterTeam.v1",
 } as const;
 
 // The form always shows at least this many player inputs (a full team).
@@ -183,6 +187,7 @@ function BanSuggestions({ lineup, statsState, bracket, excluded }: { lineup: Don
     () => recommendBans(lineup.map((p) => ({ name: p.player.name, analysis: p.analysis })), meta),
     [lineup, meta],
   );
+  const playstyle = useMemo(() => teamPlaystyle(lineup.map((p) => ({ name: p.player.name, analysis: p.analysis }))), [lineup]);
   // The tier list has no bracket below Diamond, so the data may cover a narrower bracket than the lineup's; say which.
   const metaNote =
     statsState.status === "done"
@@ -201,10 +206,12 @@ function BanSuggestions({ lineup, statsState, bracket, excluded }: { lineup: Don
     <section class="mr-bans" aria-label="Suggested bans">
       <header class="sc-report-header">
         <div>
-          <h3>Suggested bans</h3>
+          <h3>
+            Suggested bans <PlaystyleTag playstyle={playstyle} />
+          </h3>
           <p class="sc-muted">
             Heroes this lineup leans on, weighted by the current meta ({metaNote}). Click a ban to see how its score came about.
-            {excluded > 0 && ` ${excluded} player${excluded === 1 ? " is" : "s are"} left out; click the tick beside a player's name to count them.`}
+            {excluded > 0 && ` ${excluded} player${excluded === 1 ? " is" : "s are"} left out; tick them in the player list at the top to count them.`}
           </p>
         </div>
       </header>
@@ -230,6 +237,43 @@ function BanSuggestions({ lineup, statsState, bracket, excluded }: { lineup: Don
         </>
       )}
     </section>
+  );
+}
+
+/** The comp the counted players most likely run (poke / brawl / dive), from the heroes they play. Hover for the split. */
+function PlaystyleTag({ playstyle }: { playstyle: TeamPlaystyle | null }) {
+  if (!playstyle) return null;
+  const split = playstyle.shares.map((s) => `${PLAYSTYLE_LABELS[s.style]} ${pct(s.share)}`).join(" · ");
+  return (
+    <span
+      class={`mr-playstyle is-${playstyle.style}`}
+      title={`Likely comp from the hero pools of ${playstyle.players} counted player${playstyle.players === 1 ? "" : "s"}: ${split}`}
+    >
+      <span class="mr-playstyle-tag">
+        {PLAYSTYLE_LABELS[playstyle.style]}
+        {playstyle.leaning && <span class="mr-playstyle-leaning">/ {PLAYSTYLE_LABELS[playstyle.leaning]}</span>}
+      </span>
+    </span>
+  );
+}
+
+/** The analyzed players as a row of chips, each name coloured by role; ticking a chip counts that player towards the bans. */
+function BanPlayerList({ players, excluded, onToggle }: { players: DonePlayer[]; excluded: string[]; onToggle: (username: string) => void }) {
+  return (
+    <fieldset class="mr-modes mr-lineup">
+      <legend class="mr-modes-title">Players counted in bans</legend>
+      {players.map((p) => {
+        const role = playerRole(p.analysis.overall);
+        const counted = !excluded.includes(p.username);
+        return (
+          <label key={p.username} class={`mr-mode mr-lineup-player ${counted ? "" : "is-excluded"}`} title={role ? role.shares.map((s) => `${ROLE_LABELS[s.role]} ${Math.round(s.share * 100)}%`).join(" · ") : "No role data"}>
+            <input type="checkbox" checked={counted} onChange={() => onToggle(p.username)} />
+            <span class={`mr-lineup-name is-${role?.role ?? "none"}`}>{p.player.name}</span>
+            {role && <span class="mr-mode-count">{role.label}</span>}
+          </label>
+        );
+      })}
+    </fieldset>
   );
 }
 
@@ -682,14 +726,7 @@ function ResultsSummary({ usernames, results }: { usernames: string[]; results: 
     <section class="sc-results">
       {done.length > 0 && (
         <>
-          <header class="sc-report-header">
-            <div>
-              <h3>Most played hero</h3>
-              <p class="sc-muted">
-                {coverage && `${coverage} · `}Select one or more players to see their hero history, win rate and recent picks per objective mode.
-              </p>
-            </div>
-          </header>
+          <BanPlayerList players={done} excluded={banExcluded} onToggle={toggleBanPlayer} />
 
           {modesFound.length > 0 && (
             <fieldset class="mr-modes">
@@ -729,27 +766,14 @@ function ResultsSummary({ usernames, results }: { usernames: string[]; results: 
                   return (
                     <tr key={p.username} class={trick ? "is-one-trick" : ""}>
                       <th scope="row" class="sc-player-cell">
-                        <span class="mr-player-head">
-                          {/* Big tick: whether this player's heroes count towards the suggested bans. */}
-                          <button
-                            type="button"
-                            class={`mr-ban-tick ${banExcluded.includes(p.username) ? "" : "is-on"}`}
-                            aria-pressed={!banExcluded.includes(p.username)}
-                            aria-label={`Count ${p.player.name} in the suggested bans`}
-                            title={banExcluded.includes(p.username) ? "Left out of the suggested bans; click to count them" : "Counted in the suggested bans; click to leave them out"}
-                            onClick={() => toggleBanPlayer(p.username)}
-                          >
-                            ✓
-                          </button>
-                          <button
-                            type="button"
-                            class={`sc-player-button ${selectedPlayers.includes(p.username) ? "is-active" : ""}`}
-                            aria-pressed={selectedPlayers.includes(p.username)}
-                            onClick={() => togglePlayer(p.username)}
-                          >
-                            {p.player.name}
-                          </button>
-                        </span>
+                        <button
+                          type="button"
+                          class={`sc-player-button ${selectedPlayers.includes(p.username) ? "is-active" : ""}`}
+                          aria-pressed={selectedPlayers.includes(p.username)}
+                          onClick={() => togglePlayer(p.username)}
+                        >
+                          {p.player.name}
+                        </button>
                         <span class="mr-badges">
                           <RoleBadge role={playerRole(p.analysis.overall)} />
                           <OneTrickBadge trick={trick} />
@@ -813,9 +837,15 @@ export function MrScraper() {
   const [seasonsBack, setSeasonsBack] = usePersistentState<number>(STORE.seasonsBack, () => 0);
   /** Shows the backend log under the form, and the reason under a failed name. */
   const [debug, setDebug] = usePersistentState<boolean>(STORE.debug, () => false);
+  /** Fill the player list from a CCLMR team roster instead of typing names. */
+  const [useRosters, setUseRosters] = usePersistentState<boolean>(STORE.useRosters, () => false);
+  const [rosterTeam, setRosterTeam] = usePersistentState<string>(STORE.rosterTeam, () => "");
   const [running, setRunning] = useState(false);
   /** Aborts the analysis in progress; the Cancel button calls it. */
   const abortRef = useRef<AbortController | null>(null);
+  /** Bumped on every new query, so the results remount empty instead of carrying over the last run's state. */
+  const [runId, setRunId] = useState(0);
+  const mainRef = useRef<HTMLElement>(null);
 
   // Lists saved before the default grew to MIN_PLAYER_SLOTS entries get topped up once.
   useEffect(() => {
@@ -856,12 +886,16 @@ export function MrScraper() {
     setPlayers((prev) => (prev.length > MIN_PLAYER_SLOTS ? prev.filter((_, i) => i !== index) : prev.map((p, i) => (i === index ? "" : p))));
   }
   function clearAll() {
+    setRosterTeam("");
     setPlayers(Array(MIN_PLAYER_SLOTS).fill(""));
     setResults({});
     clearStored([STORE.modes, STORE.selected, STORE.banExcluded]);
   }
 
-  const validNames = [...new Set(players.map((p) => p.trim()).filter((p) => USERNAME_PATTERN.test(p)))];
+  // With rosters on, the chosen team's roster is the player list (read-only); the typed names are kept for when it is turned off.
+  const roster = useRosters ? (ROSTERS.find((r) => r.team === rosterTeam)?.players ?? []) : null;
+  const names = roster ?? players;
+  const validNames = [...new Set(names.map((p) => p.trim()).filter((p) => USERNAME_PATTERN.test(p)))];
 
   function analyze(e: Event) {
     e.preventDefault();
@@ -877,6 +911,10 @@ export function MrScraper() {
   async function runAnalysis(seasonsBack: number) {
     if (running || validNames.length === 0) return;
     setRunning(true);
+    // A new query starts from a clean slate: no detail cards or ban ticks from the last run, and the results scrolled to the top.
+    clearStored([STORE.selected, STORE.banExcluded]);
+    setRunId((n) => n + 1);
+    mainRef.current?.scrollTo({ top: 0 });
     setResults(Object.fromEntries(validNames.map((n) => [n, { status: "loading", message: "Queued…" }])));
     const controller = new AbortController();
     abortRef.current = controller;
@@ -946,9 +984,47 @@ export function MrScraper() {
         </header>
 
         <section class="sc-panel mr-search">
-          <h2>Hero tracker</h2>
-
         <form class="sc-form" onSubmit={analyze}>
+          <div class="mr-roster-picker">
+            <label class="mr-mode" title="Pick a team from the CCLMR Fall 2026 rosters instead of typing names">
+              <input type="checkbox" checked={useRosters} disabled={running} onChange={(e) => setUseRosters((e.currentTarget as HTMLInputElement).checked)} />
+              Use CCLMR rosters
+            </label>
+            {useRosters && (
+              <label class="mr-seasons">
+                <span>Team</span>
+                <select value={rosterTeam} disabled={running} onChange={(e) => setRosterTeam((e.currentTarget as HTMLSelectElement).value)}>
+                  <option value="" disabled>
+                    Choose a team…
+                  </option>
+                  {ROSTERS.map((r) => (
+                    <option key={r.team} value={r.team}>
+                      {r.team} ({r.players.length})
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
+          </div>
+          {roster ? (
+            // Read-only roster: one compact row per player, coloured by the run's progress like the input boxes.
+            roster.length === 0 ? (
+              <p class="sc-muted mr-roster-empty">Choose a team to load its roster.</p>
+            ) : (
+              <ol class="mr-roster-list" aria-label={`${rosterTeam} roster`}>
+                {roster.map((name) => {
+                  const result = results[name.trim()];
+                  const message = result && result.status !== "done" ? result.message : undefined;
+                  return (
+                    <li key={name} class={`mr-roster-player ${result ? `is-${result.status}` : ""}`} title={message ? `${name}: ${message}` : name}>
+                      <span class="mr-roster-name">{name}</span>
+                      {result?.status === "error" && debug && <span class="sc-field-note">{message}</span>}
+                    </li>
+                  );
+                })}
+              </ol>
+            )
+          ) : (
           <div class="sc-fields">
             {players.map((value, i) => {
               const trimmed = value.trim();
@@ -995,6 +1071,7 @@ export function MrScraper() {
               );
             })}
           </div>
+          )}
           {debug && <DebugTerminal />}
           <div class="sc-form-actions">
             <button type="submit" class="sc-add sc-primary" disabled={running || validNames.length === 0}>
@@ -1005,9 +1082,11 @@ export function MrScraper() {
                 Cancel
               </button>
             )}
-            <button type="button" class="sc-add" disabled={running} onClick={addPlayer}>
-              + Add player
-            </button>
+            {!roster && (
+              <button type="button" class="sc-add" disabled={running} onClick={addPlayer}>
+                + Add player
+              </button>
+            )}
             <label class="mr-seasons">
               <span>Earlier seasons</span>
               <select
@@ -1029,7 +1108,7 @@ export function MrScraper() {
             <button
               type="button"
               class="sc-clear"
-              disabled={running || (players.every((p) => p.trim() === "") && Object.keys(results).length === 0)}
+              disabled={running || (names.every((p) => p.trim() === "") && Object.keys(results).length === 0)}
               onClick={clearAll}
             >
               Clear
@@ -1040,9 +1119,10 @@ export function MrScraper() {
         </section>
       </aside>
 
-      <section class="mr-main" aria-label="Results">
+      <section class="mr-main" aria-label="Results" ref={mainRef}>
         {validNames.some((n) => results[n]?.status === "done") ? (
-          <ResultsSummary usernames={validNames} results={results} />
+          // Keyed by run so each query mounts a fresh summary (selections, open ban reasoning, meta stats).
+          <ResultsSummary key={runId} usernames={validNames} results={results} />
         ) : (
           <p class="mr-empty sc-muted">
             {running ? "Looking players up…" : "Enter player names or UIDs on the left and run the analysis. Results appear here."}

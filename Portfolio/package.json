@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "mr:rosters": "node scripts/mr-rosters.mjs"
   },
   "dependencies": {
     "@pkmn/dex": "^0.10.11",

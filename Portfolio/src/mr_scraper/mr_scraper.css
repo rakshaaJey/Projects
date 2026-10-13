@@ -379,6 +379,86 @@
   border-color: var(--sc-accent);
 }
 
+/* "Use CCLMR rosters" toggle and its team picker, above the player inputs. */
+.mr-roster-picker {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+  margin-bottom: 12px;
+}
+
+.mr-roster-picker .mr-seasons {
+  flex: 1 1 100%;
+  min-width: 0;
+}
+
+.mr-roster-picker select {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Read-only roster shown instead of the name boxes when CCLMR rosters are on: compact rows,
+   coloured by the run's progress the same way as the boxes. */
+/* Two columns when the sidebar has room; past the space available the list scrolls inside itself,
+   so a 12-player roster never pushes the buttons below out of the sidebar. */
+.mr-roster-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  align-content: start;
+  gap: 4px;
+  flex: 0 1 auto;
+  min-height: 60px;
+  margin: 0;
+  padding: 0 2px 0 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.mr-roster-player {
+  display: grid;
+  min-width: 0;
+  padding: 3px 8px;
+  font-size: 0.82rem;
+  line-height: 1.35;
+  border-left: 3px solid rgb(var(--sc-muted-rgb) / 0.6);
+  background: rgb(255 255 255 / 0.03);
+}
+
+/* Long names are cut with an ellipsis; the full name is in the row's tooltip. */
+.mr-roster-name {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.mr-roster-player.is-loading {
+  border-left-color: var(--sc-accent);
+  background-image: linear-gradient(90deg, transparent 0%, rgb(var(--sc-accent-rgb) / 0.35) 50%, transparent 100%);
+  background-size: 60% 100%;
+  background-repeat: no-repeat;
+  animation: mr-sweep 1.4s linear infinite;
+}
+
+.mr-roster-player.is-done {
+  border-left-color: #4ade80;
+  background-color: rgb(74 222 128 / 0.12);
+}
+
+.mr-roster-player.is-error {
+  border-left-color: #f87171;
+  background-color: rgb(248 113 113 / 0.12);
+}
+
+.mr-roster-player .sc-field-note {
+  margin-top: 3px;
+}
+
+.mr-roster-empty {
+  margin: 0;
+  font-size: 0.85rem;
+}
+
 /* Wrapping: the extra Rank column and badges make rows wider than the shared
    stylesheet's no-wrap tables expect, so on this page text wraps inside its
    cell instead of running past the panel. */
@@ -639,9 +719,10 @@
   margin: 12px 0 4px;
   padding-bottom: 12px;
   border-bottom: 1px solid rgb(var(--sc-muted-rgb) / 0.5);
+  container: bans / inline-size;
 }
 
-/* One row of cards; on a narrow pane the row scrolls sideways. Clicking a card opens its reasoning below the row. */
+/* One row of cards when all six fit; clicking a card opens its reasoning below the cards. */
 .mr-ban-list {
   display: grid;
   grid-auto-flow: column;
@@ -651,6 +732,22 @@
   padding: 0 0 4px;
   list-style: none;
   overflow-x: auto;
+}
+
+/* Too narrow for six 205px cards in a row (6 x 205 + 5 x 10 gap = 1280px): a 3 x 2 grid instead of scrolling sideways. */
+@container bans (width < 1280px) {
+  .mr-ban-list {
+    grid-auto-flow: row;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    overflow-x: visible;
+  }
+}
+
+/* Too narrow for three cards side by side (3 x 205 + 2 x 10 = 635px): two columns. */
+@container bans (width < 635px) {
+  .mr-ban-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 /* Portrait on the left, text beside it. */
@@ -871,45 +968,56 @@
   font-size: 0.65rem;
 }
 
-/* Per-player "count in bans" tick beside the name in the summary table: big and unmistakable. */
-.mr-player-head {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+/* Player list at the top of the results: names coloured by role, ticked = counted in the bans. */
+.mr-lineup {
+  margin-top: 0;
 }
 
-.mr-ban-tick {
-  flex: none;
-  width: 36px;
-  height: 36px;
-  padding: 0;
-  font: inherit;
-  font-size: 1.5rem;
+.mr-lineup-name {
   font-weight: 700;
-  line-height: 1;
-  color: transparent;
-  background: transparent;
-  border: 2px solid var(--sc-muted);
-  cursor: pointer;
+  color: var(--mr-role, var(--sc-fg));
 }
 
-.mr-ban-tick:hover,
-.mr-ban-tick:focus-visible {
-  outline: none;
-  border-color: var(--sc-fg);
-  color: rgb(var(--sc-muted-rgb) / 0.6);
+.mr-lineup-name.is-tank { --mr-role: #7cb6ff; }
+.mr-lineup-name.is-dps { --mr-role: #ff7a7a; }
+.mr-lineup-name.is-support { --mr-role: #7fe0a0; }
+.mr-lineup-name.is-flex { --mr-role: #d07cff; }
+
+.mr-lineup-player.is-excluded .mr-lineup-name {
+  opacity: 0.45;
+  text-decoration: line-through;
 }
 
-.mr-ban-tick.is-on {
+/* Likely team comp beside the "Suggested bans" heading. */
+.mr-playstyle {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  margin-left: 8px;
+  vertical-align: middle;
+}
+
+.mr-playstyle-tag {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  padding: 3px 10px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 1.4;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
   color: var(--sc-bg);
-  background: #4ade80;
-  border-color: #4ade80;
+  background: var(--mr-style, var(--sc-accent));
 }
 
-.mr-ban-tick.is-on:hover,
-.mr-ban-tick.is-on:focus-visible {
-  color: var(--sc-bg);
-  filter: brightness(1.1);
+.mr-playstyle.is-poke { --mr-style: #7cc7ff; }
+.mr-playstyle.is-brawl { --mr-style: #ffab5c; }
+.mr-playstyle.is-dive { --mr-style: #e58cff; }
+
+.mr-playstyle-leaning {
+  font-weight: 400;
 }
 
 /* One-trick highlight */

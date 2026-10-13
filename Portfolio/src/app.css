@@ -418,6 +418,44 @@ body {
   cursor: pointer;
 }
 
+.vinyl-grid {
+  margin-top: 14px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 10px;
+  background: #929292;
+  border: 1px solid #797979;
+  border-radius: 8px;
+  padding: 10px;
+}
+
+.vinyl-item {
+  display: block;
+  min-width: 0;
+  padding: 4px;
+  border-radius: 4px;
+  text-decoration: none;
+}
+
+.vinyl-item:hover {
+  background: #c7c7c7;
+}
+
+.vinyl-cover {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: 3px;
+  display: block;
+}
+
+.vinyl-text {
+  margin-top: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .taskbar-tasks {
   display: flex;
   gap: 6px;
