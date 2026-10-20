@@ -20,7 +20,9 @@
   flex-direction: column;
   gap: 16px;
   min-height: 0;
+  overflow-x: hidden;
   overflow-y: auto;
+  scrollbar-width: none; /* still scrolls on a short window, just without a visible bar */
   padding: 20px 20px 20px 24px;
   border-right: 1px solid rgb(var(--sc-muted-rgb) / 0.5);
   background: rgb(255 255 255 / 0.02);
@@ -53,7 +55,13 @@
   flex: 0 1 auto;
   min-height: 200px;
   overflow-y: auto;
+  scrollbar-width: none;
   padding-right: 2px;
+}
+
+.mr-sidebar::-webkit-scrollbar,
+.mr-search .sc-fields::-webkit-scrollbar {
+  display: none;
 }
 
 /* The buttons sit at the bottom of the sidebar; the debug terminal, when on, sits just above them. */
@@ -173,11 +181,20 @@
   font-size: 0.8rem;
 }
 
+/* A full-width row, so the label and dropdown line up with the buttons above at any sidebar width. */
 .mr-sidebar .mr-seasons {
+  flex: 1 1 100%;
+  flex-wrap: wrap;
+  gap: 6px 8px;
+  min-width: 0;
   font-size: 0.75rem;
+  white-space: nowrap;
 }
 
+/* Drops onto its own full-width line under the label when the sidebar is too narrow for both. */
 .mr-sidebar .mr-seasons select {
+  flex: 1 1 140px;
+  min-width: 0;
   padding: 5px 8px;
   font-size: 0.85rem;
 }
@@ -635,6 +652,10 @@
   text-align: center;
 }
 
+.sc-summary thead th {
+  text-align: center;
+}
+
 .mr-rank-cell {
   vertical-align: top;
 }
@@ -990,24 +1011,74 @@
   font-size: 0.65rem;
 }
 
-/* Player list at the top of the results: names coloured by role, ticked = counted in the bans. */
+/* Player list at the top of the results: one borderless column per role, each name a box that toggles
+   whether the player counts in the bans (filled = counted, faded and struck through = left out). */
 .mr-lineup {
+  display: block;
   margin-top: 0;
 }
 
-.mr-lineup-name {
-  font-weight: 700;
-  color: var(--mr-role, var(--sc-fg));
+.mr-lineup-grid {
+  display: grid;
+  gap: 8px 12px;
+  margin-top: 4px;
 }
 
-.mr-lineup-name.is-tank { --mr-role: #7cb6ff; }
-.mr-lineup-name.is-dps { --mr-role: #ff7a7a; }
-.mr-lineup-name.is-support { --mr-role: #7fe0a0; }
-.mr-lineup-name.is-flex { --mr-role: #d07cff; }
+.mr-lineup-col {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
 
-.mr-lineup-player.is-excluded .mr-lineup-name {
+.mr-lineup-col.is-tank { --mr-role: #7cb6ff; }
+.mr-lineup-col.is-dps { --mr-role: #ff7a7a; }
+.mr-lineup-col.is-support { --mr-role: #7fe0a0; }
+.mr-lineup-col.is-flex { --mr-role: #d07cff; }
+
+.mr-lineup-head {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--mr-role, var(--sc-muted));
+}
+
+.mr-lineup-empty {
+  text-align: center;
+  color: var(--sc-muted);
+}
+
+.mr-lineup-player {
+  padding: 6px 10px;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-align: center;
+  overflow-wrap: anywhere;
+  color: var(--mr-role, var(--sc-fg));
+  background: transparent;
+  border: 2px solid var(--mr-role, var(--sc-muted));
+  cursor: pointer;
+  transition: background-color 120ms ease, opacity 120ms ease;
+}
+
+.mr-lineup-player.is-counted {
+  background: color-mix(in srgb, var(--mr-role, var(--sc-muted)) 18%, transparent);
+}
+
+.mr-lineup-player.is-excluded {
   opacity: 0.45;
   text-decoration: line-through;
+  border-style: dashed;
+}
+
+.mr-lineup-player:hover,
+.mr-lineup-player:focus-visible {
+  outline: none;
+  opacity: 1;
+  background: color-mix(in srgb, var(--mr-role, var(--sc-muted)) 30%, transparent);
 }
 
 /* Likely team comp beside the "Suggested bans" heading. */
@@ -1044,8 +1115,12 @@
 
 /* One-trick highlight */
 
+/* Text centred both ways, even when the badge is stretched to the height of the role badge beside it. */
 .mr-one-trick {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
   margin-top: 6px;
   padding: 3px 10px;
   font-size: 0.7rem;

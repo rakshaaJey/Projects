@@ -300,22 +300,48 @@ function PlaystyleTag({ playstyle }: { playstyle: TeamPlaystyle | null }) {
   );
 }
 
-/** The analyzed players as a row of chips, each name coloured by role; ticking a chip counts that player towards the bans. */
+const LINEUP_COLUMNS = [
+  { role: "tank", label: "Tank" },
+  { role: "dps", label: "DPS" },
+  { role: "support", label: "Support" },
+  { role: "flex", label: "Flex" },
+] as const;
+
+/** The analyzed players in one column per role (tank, DPS, support, flex); clicking a name toggles whether it counts towards the bans. */
 function BanPlayerList({ players, excluded, onToggle }: { players: DonePlayer[]; excluded: string[]; onToggle: (username: string) => void }) {
+  const withRoles = players.map((p) => ({ p, role: playerRole(p.analysis.overall) }));
+  // Players without any role data have no column of their own; they get an extra one only when there are some.
+  const noData = withRoles.filter((x) => !x.role);
+  const columns = [
+    ...LINEUP_COLUMNS.map((c) => ({ ...c, players: withRoles.filter((x) => x.role?.role === c.role) })),
+    ...(noData.length ? [{ role: "none", label: "No data", players: noData }] : []),
+  ];
   return (
     <fieldset class="mr-modes mr-lineup">
       <legend class="mr-modes-title">Players counted in bans</legend>
-      {players.map((p) => {
-        const role = playerRole(p.analysis.overall);
-        const counted = !excluded.includes(p.username);
-        return (
-          <label key={p.username} class={`mr-mode mr-lineup-player ${counted ? "" : "is-excluded"}`} title={role ? role.shares.map((s) => `${ROLE_LABELS[s.role]} ${Math.round(s.share * 100)}%`).join(" · ") : "No role data"}>
-            <input type="checkbox" checked={counted} onChange={() => onToggle(p.username)} />
-            <span class={`mr-lineup-name is-${role?.role ?? "none"}`}>{p.player.name}</span>
-            {role && <span class="mr-mode-count">{role.label}</span>}
-          </label>
-        );
-      })}
+      <div class="mr-lineup-grid" style={{ gridTemplateColumns: `repeat(${columns.length}, minmax(0, 1fr))` }}>
+        {columns.map((c) => (
+          <div key={c.role} class={`mr-lineup-col is-${c.role}`}>
+            <span class="mr-lineup-head">{c.label}</span>
+            {c.players.length === 0 && <span class="mr-lineup-empty">—</span>}
+            {c.players.map(({ p, role }) => {
+              const counted = !excluded.includes(p.username);
+              return (
+                <button
+                  key={p.username}
+                  type="button"
+                  class={`mr-lineup-player is-${c.role} ${counted ? "is-counted" : "is-excluded"}`}
+                  aria-pressed={counted}
+                  title={`${counted ? "Counted" : "Not counted"} in the bans · ${role ? role.shares.map((s) => `${ROLE_LABELS[s.role]} ${Math.round(s.share * 100)}%`).join(" · ") : "No role data"}`}
+                  onClick={() => onToggle(p.username)}
+                >
+                  {p.player.name}
+                </button>
+              );
+            })}
+          </div>
+        ))}
+      </div>
     </fieldset>
   );
 }
@@ -1025,7 +1051,6 @@ export function MrScraper() {
       <aside class="mr-sidebar">
         <header class="sc-header">
           <h1>MR_Scraper</h1>
-          <p class="sc-subtitle">Heroes played in competitive and custom matches, overall and per objective mode, with current and peak rank</p>
         </header>
 
         <section class="sc-panel mr-search">
