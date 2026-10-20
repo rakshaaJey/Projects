@@ -5,6 +5,7 @@ import {
   debugLog,
   fetchRecentMatches,
   findPlayer,
+  isBlockedError,
   loadHeroStats,
   subscribeDebug,
   type DebugEntry,
@@ -62,6 +63,24 @@ const padPlayers = (list: string[]) => (list.length >= MIN_PLAYER_SLOTS ? list :
 // Marvel Rivals usernames: 2-20 visible characters (a numeric UID also fits).
 const USERNAME_PATTERN = /^\S.{0,18}\S$/;
 
+// Shown instead of results for blocked players looked up any way other than a team shortcut.
+const BLOCKED_MESSAGE = "Sorry, can't dox my own team 🙃";
+
+// Typing one of these (any case) as the only name runs that CCLMR team's whole roster instead,
+// and is the only way past the blocklist for those players.
+const TEAM_SHORTCUTS: Record<string, string> = {
+  UW_MR: "WATERLOO UNIVERSITY - Waterloo Warriors Gold",
+};
+
+/** The roster a lone shortcut name stands for, or null when the typed names are ordinary players. */
+function shortcutRoster(typed: string[]): { shortcut: string; team: string; players: string[] } | null {
+  const filled = typed.map((p) => p.trim()).filter(Boolean);
+  if (filled.length !== 1) return null;
+  const shortcut = Object.keys(TEAM_SHORTCUTS).find((k) => k.toLowerCase() === filled[0].toLowerCase());
+  const roster = shortcut ? ROSTERS.find((r) => r.team === TEAM_SHORTCUTS[shortcut]) : undefined;
+  return shortcut && roster ? { shortcut, team: roster.team, players: roster.players } : null;
+}
+
 // Each season adds up to 120 matches (rivalsdata.com) or 20 (rivalsmeta.com); cap how far back the page will look.
 const MAX_SEASONS_BACK = 5;
 
@@ -70,7 +89,8 @@ const RESULT_LABEL = { win: "W", loss: "L", draw: "D" } as const;
 /** Raw fetch result per player; analysis is recomputed from this whenever the mode filter changes. */
 type PlayerResult =
   | { status: "loading"; message: string }
-  | { status: "error"; message: string }
+  /** `blocked`: the player is on the blocklist (data/blocklist.ts), so the run shows BLOCKED_MESSAGE instead of anything about them. */
+  | { status: "error"; message: string; blocked?: boolean }
   /** The account was not found, or has no matches to count: shown in red with a tracker.gg link instead of any data. */
   | { status: "nodata"; message: string; name: string; season: number | null }
   | { status: "done"; player: MrPlayer; matches: MrMatch[]; seasons: number[]; rank?: RankSummary; historyPrivate?: boolean };
@@ -959,7 +979,9 @@ export function MrScraper() {
 
   // With rosters on, the chosen team's roster is the player list (read-only); the typed names are kept for when it is turned off.
   const roster = useRosters ? (ROSTERS.find((r) => r.team === rosterTeam)?.players ?? []) : null;
-  const names = roster ?? players;
+  // A lone team shortcut such as "UW_MR" in the typed list stands for that team's roster.
+  const shortcut = roster ? null : shortcutRoster(players);
+  const names = roster ?? shortcut?.players ?? players;
   const validNames = [...new Set(names.map((p) => p.trim()).filter((p) => USERNAME_PATTERN.test(p)))];
 
   function analyze(e: Event) {
@@ -984,6 +1006,7 @@ export function MrScraper() {
     const controller = new AbortController();
     abortRef.current = controller;
     const { signal } = controller;
+    const allowBlocked = shortcut !== null;
     debugLog(`run started: ${validNames.length} player${validNames.length === 1 ? "" : "s"}, ${seasonsBack} earlier season${seasonsBack === 1 ? "" : "s"}`);
 
     // Players are processed one at a time to be gentle on the upstream site.
@@ -1004,12 +1027,13 @@ export function MrScraper() {
       debugLog(`── ${username}`);
       try {
         update({ status: "loading", message: "Looking up player…" });
-        const player = await findPlayer(username, { onRateLimit, signal });
+        const player = await findPlayer(username, { onRateLimit, signal, allowBlocked });
         update({ status: "loading", message: `Fetching match history for ${player.name}…` });
         const { name, matches, seasons, historyPrivate, rank, source } = await fetchRecentMatches(player.uid, {
           seasonsBack,
           onRateLimit,
           signal,
+          allowBlocked,
           onSeason: (season, fetched) =>
             update({ status: "loading", message: `Fetched ${fetched} matches${season !== null ? ` through ${seasonLabel(season)}` : ""}…` }),
         });
@@ -1034,6 +1058,11 @@ export function MrScraper() {
           update({ status: "error", message: "Cancelled." });
           continue;
         }
+        if (isBlockedError(err)) {
+          debugLog(`${username}: blocked`);
+          update({ status: "error", message: BLOCKED_MESSAGE, blocked: true });
+          continue;
+        }
         const message = err instanceof ApiError || err instanceof Error ? err.message : "Something went wrong.";
         debugLog(`${username}: failed — ${message}`);
         // "Not found" is an answer, not an outage: list the player as having no data, with a tracker.gg link.
@@ -1044,6 +1073,11 @@ export function MrScraper() {
     abortRef.current = null;
     setRunning(false);
   }
+
+  const anyBlocked = validNames.some((n) => {
+    const r = results[n];
+    return r?.status === "error" && r.blocked;
+  });
 
   return (
     <main class="sc-scraper mr-app">
@@ -1140,6 +1174,11 @@ export function MrScraper() {
                 </div>
               );
             })}
+            {shortcut && (
+              <p class="sc-muted mr-shortcut-note">
+                {shortcut.shortcut} = {shortcut.team} ({shortcut.players.length} players)
+              </p>
+            )}
           </div>
           )}
           {debug && <DebugTerminal />}
@@ -1190,10 +1229,15 @@ export function MrScraper() {
       </aside>
 
       <section class="mr-main" aria-label="Results" ref={mainRef}>
+        {anyBlocked && (
+          <p class="mr-blocked" role="alert">
+            {BLOCKED_MESSAGE}
+          </p>
+        )}
         {validNames.some((n) => results[n]?.status === "done" || results[n]?.status === "nodata") ? (
           // Keyed by run so each query mounts a fresh summary (selections, open ban reasoning, meta stats).
           <ResultsSummary key={runId} usernames={validNames} results={results} />
-        ) : (
+        ) : anyBlocked && !running ? null : (
           <p class="mr-empty sc-muted">
             {running ? "Looking players up…" : "Enter player names or UIDs on the left and run the analysis. Results appear here."}
           </p>

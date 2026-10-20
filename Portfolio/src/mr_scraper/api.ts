@@ -239,7 +239,14 @@ const statusOf = (err: unknown) => (err instanceof ApiError ? String(err.status)
 const brief = (json: unknown) => (json === undefined ? "" : ` ${JSON.stringify(json).slice(0, 80)}`);
 
 /** For a player on the blocklist (data/blocklist.ts); 451 so it is never mistaken for an outage or a "not found". */
-const blockedError = (name: string) => new ApiError(`"${name}" is not available on this site.`, 451);
+const BLOCKED_STATUS = 451;
+const blockedError = (name: string) => new ApiError(`"${name}" is not available on this site.`, BLOCKED_STATUS);
+
+/** Whether a lookup failed because the player is on the blocklist. */
+export const isBlockedError = (err: unknown): boolean => err instanceof ApiError && err.status === BLOCKED_STATUS;
+
+/** `allowBlocked` skips the blocklist; only the site's own team shortcut (UW_MR in app.tsx) sets it. */
+type BlocklistOption = { allowBlocked?: boolean };
 
 // ---------------------------------------------------------------------------
 // Being gentle with the upstreams, and riding out their outages:
@@ -474,9 +481,9 @@ async function findPlayerMr(username: string, options: RequestOptions): Promise<
  * every source). A numeric input is taken as the UID itself, no search needed;
  * the display name then comes from the profile. Names must match exactly.
  */
-export async function findPlayer(username: string, options: RequestOptions = {}): Promise<MrPlayer> {
+export async function findPlayer(username: string, { allowBlocked, ...options }: RequestOptions & BlocklistOption = {}): Promise<MrPlayer> {
   const trimmed = username.trim();
-  if (isBlocked(trimmed)) throw blockedError(trimmed);
+  if (!allowBlocked && isBlocked(trimmed)) throw blockedError(trimmed);
   if (UID_PATTERN.test(trimmed)) return { uid: trimmed, name: trimmed, candidates: 1, source: "uid" };
   const cacheKey = `find:${trimmed}`;
   const cached = cacheRead<MrPlayer>(cacheKey, TTL.findPlayer);
@@ -706,7 +713,7 @@ async function fetchRecentMatchesRd(uid: string, options: HistoryOptions): Promi
  * newest first and de-duplicated: from rivalsdata.com (up to 120 per season),
  * else rivalsmeta.com (last 20).
  */
-export async function fetchRecentMatches(uid: string, options: HistoryOptions = {}): Promise<RecentMatches> {
+export async function fetchRecentMatches(uid: string, { allowBlocked, ...options }: HistoryOptions & BlocklistOption = {}): Promise<RecentMatches> {
   const result = await firstWorking(
     [
       { source: "rivalsdata.com", run: () => fetchRecentMatchesRd(uid, options) },
@@ -715,7 +722,7 @@ export async function fetchRecentMatches(uid: string, options: HistoryOptions = 
     "Fetching match history",
   );
   // A blocked player looked up by UID is only recognisable once the profile has named them.
-  if (isBlocked(result.name)) throw blockedError(result.name as string);
+  if (!allowBlocked && isBlocked(result.name)) throw blockedError(result.name as string);
   return result;
 }
 

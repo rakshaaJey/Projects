@@ -69,6 +69,11 @@
   margin-top: auto;
 }
 
+.mr-shortcut-note {
+  margin: 4px 0 0;
+  font-size: 0.8rem;
+}
+
 /* With the terminal on, it fills the spare height itself; keep clear space between it and the last player box. */
 .mr-search .mr-terminal-wrap {
   margin-top: 20px;
@@ -290,6 +295,17 @@
 .mr-empty {
   padding: 24px;
   border: 1px dashed var(--sc-muted);
+}
+
+/* Shown when a run included blocked players (data/blocklist.ts). */
+.mr-blocked {
+  margin: 0 0 16px;
+  padding: 16px 24px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #ff7a7a;
+  border: 2px solid #ff7a7a;
+  background: rgb(255 122 122 / 0.08);
 }
 
 @media (max-width: 1000px) {
