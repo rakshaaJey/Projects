@@ -1008,7 +1008,8 @@ export function App() {
         </button>
 
         <div class="taskbar-tasks">
-          {icons.slice(0, 4).map((icon) => (
+          {/* The mobile taskbar scrolls sideways, so it has room for every window. */}
+          {(isMobile ? icons : icons.slice(0, 4)).map((icon) => (
             <button
               class="task-button"
               key={icon.id}

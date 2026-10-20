@@ -105,7 +105,7 @@
 
 /* Party grid */
 
-/* All six slots share one row; on narrow screens the row scrolls sideways rather than wrapping. */
+/* All six slots share one row; on tablets and phones they wrap into three or two columns (see the end of the file). */
 .pk-party-scroll {
   margin: 18px 0 0;
   overflow-x: auto;
@@ -337,7 +337,7 @@
 
 .pk-goals {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
   gap: 12px;
   margin-top: 12px;
 }
@@ -568,7 +568,7 @@
 
 .pk-ai-list {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr));
   gap: 12px;
   margin: 14px 0 0;
   padding: 0;
@@ -608,7 +608,7 @@
 
 .pk-io {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
   gap: 14px;
   margin-top: 12px;
 }
@@ -622,4 +622,33 @@
 .pk-io button {
   align-self: flex-start;
   margin-top: 8px;
+}
+
+/* Small screens */
+
+@media (max-width: 960px) {
+  .pk-party {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .pk-party {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .pk-slot {
+    min-height: 0;
+    padding: 14px 8px 10px;
+  }
+
+  .pk-editor-panel {
+    padding: 12px;
+  }
+
+  .pk-speed li {
+    grid-template-columns: minmax(90px, 1fr) 2fr auto;
+    gap: 8px;
+  }
 }

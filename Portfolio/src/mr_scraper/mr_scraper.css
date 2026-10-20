@@ -8,6 +8,7 @@
   gap: 0;
   box-sizing: border-box;
   height: 100vh;
+  height: 100dvh; /* excludes mobile browser toolbars where supported */
   max-width: none;
   margin: 0;
   padding: 0;
@@ -37,6 +38,14 @@
   flex: 1;
   flex-direction: column;
   min-height: 0;
+}
+
+/* The CCLMR roster list never scrolls inside itself, so while it is shown the panel never shrinks below
+   it either: on a short window the sidebar scrolls rather than the roster spilling out of the panel. */
+.mr-sidebar .sc-panel.mr-search:has(.mr-roster-list),
+.mr-search .sc-form:has(.mr-roster-list) {
+  flex-shrink: 0;
+  min-height: auto;
 }
 
 /* The fields keep at least a few rows visible and scroll beyond that; the terminal takes whatever height is left. */
@@ -225,7 +234,8 @@
   background-color: rgb(74 222 128 / 0.16);
 }
 
-.sc-field.is-error .sc-input {
+.sc-field.is-error .sc-input,
+.sc-field.is-nodata .sc-input {
   border-color: #f87171;
   background-color: rgb(248 113 113 / 0.16);
 }
@@ -400,18 +410,17 @@
 
 /* Read-only roster shown instead of the name boxes when CCLMR rosters are on: compact rows,
    coloured by the run's progress the same way as the boxes. */
-/* Two columns when the sidebar has room; past the space available the list scrolls inside itself,
-   so a 12-player roster never pushes the buttons below out of the sidebar. */
+/* Two columns when the sidebar has room. The list never scrolls inside itself: it always shows the whole
+   roster at full height (it does not shrink), and on a short window the sidebar scrolls instead. */
 .mr-roster-list {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
   align-content: start;
   gap: 4px;
-  flex: 0 1 auto;
-  min-height: 60px;
+  flex: none;
   margin: 0;
-  padding: 0 2px 0 0;
-  overflow-y: auto;
+  padding: 0;
+  overflow: visible;
   list-style: none;
 }
 
@@ -445,7 +454,8 @@
   background-color: rgb(74 222 128 / 0.12);
 }
 
-.mr-roster-player.is-error {
+.mr-roster-player.is-error,
+.mr-roster-player.is-nodata {
   border-left-color: #f87171;
   background-color: rgb(248 113 113 / 0.12);
 }
@@ -502,24 +512,31 @@
 
 /* Where the card opens is decided per hover in placeHoverCard (app.tsx), which measures the room left
    below and to the right; these classes carry its answer. They override the shared stylesheet's
-   row-position rule, which cannot know where the page ends. */
-.sc-summary tbody tr .sc-top:not(.opens-up) .sc-hover-card {
-  top: calc(100% + 8px);
-  bottom: auto;
-  border-top-width: 3px;
-  border-bottom: 1px solid var(--sc-muted);
-}
+   row-position rule, which cannot know where the page ends. Narrow screens use the shared bottom sheet instead. */
+@media (min-width: 901px) {
+  .sc-summary tbody tr .sc-top:not(.opens-up) .sc-hover-card {
+    top: calc(100% + 8px);
+    bottom: auto;
+    border-top-width: 3px;
+    border-bottom: 1px solid var(--sc-muted);
+  }
 
-.sc-summary tbody tr .sc-top.opens-up .sc-hover-card {
-  top: auto;
-  bottom: calc(100% + 8px);
-  border-top-width: 1px;
-  border-bottom: 3px solid var(--sc-accent);
-}
+  .sc-summary tbody tr .sc-top.opens-up .sc-hover-card {
+    top: auto;
+    bottom: calc(100% + 8px);
+    border-top-width: 1px;
+    border-bottom: 3px solid var(--sc-accent);
+  }
 
-.sc-top.opens-left .sc-hover-card {
-  left: auto;
-  right: 0;
+  .sc-top.opens-left .sc-hover-card {
+    left: auto;
+    right: 0;
+  }
+
+  /* The floating card holds a 5 x 2 grid of hero tiles (nine heroes plus a "more" tile), capped so it never leaves the viewport. */
+  .sc-hover-card {
+    width: min(540px, calc(100vw - 32px));
+  }
 }
 
 /* When placeHoverCard caps the height, the tiles scroll inside the card instead of the page growing. */
@@ -528,10 +545,8 @@
   box-sizing: border-box;
 }
 
-/* The floating card holds a 5 x 2 grid of hero tiles (nine heroes plus a "more" tile), capped so it never leaves the viewport. */
 .sc-hover-card {
   white-space: normal;
-  width: min(540px, calc(100vw - 32px));
 }
 
 .sc-hero-grid {
@@ -747,6 +762,13 @@
 @container bans (width < 635px) {
   .mr-ban-list {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Phone width: one card per row so the portrait and text keep room. */
+@container bans (width < 420px) {
+  .mr-ban-list {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
@@ -1071,4 +1093,106 @@
   margin: 10px 0 0;
   font-size: 0.85rem;
   color: var(--sc-muted);
+}
+
+/* Players with no data: red, with only the reason and a tracker.gg link (marked as incomplete data). */
+.sc-report.mr-nodata {
+  border-color: #f87171;
+  border-left: 4px solid #f87171;
+  background: rgb(248 113 113 / 0.06);
+}
+
+.mr-nodata h3 {
+  color: #f87171;
+}
+
+.mr-nodata-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mr-nodata-player {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+  padding: 8px 12px;
+  border-left: 3px solid #f87171;
+  background: rgb(248 113 113 / 0.12);
+}
+
+.mr-nodata-name {
+  font-weight: 700;
+  color: #f87171;
+  overflow-wrap: anywhere;
+}
+
+.mr-nodata-reason {
+  flex: 1 1 200px;
+  font-size: 0.85rem;
+  color: var(--sc-muted);
+}
+
+.mr-nodata-link {
+  color: var(--sc-fg);
+  font-size: 0.9rem;
+}
+
+.mr-incomplete {
+  padding: 2px 8px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  color: #f87171;
+  border: 1px dashed #f87171;
+}
+
+/* Small screens. Kept last so these override the base rules above. */
+
+@media (max-width: 1000px) {
+  /* Stacked, the page scrolls as a whole, so the name boxes no longer need to scroll inside themselves. */
+  .mr-search .sc-fields {
+    min-height: 0;
+    overflow-y: visible;
+  }
+}
+
+@media (max-width: 600px) {
+  .mr-app {
+    padding: 20px 12px;
+  }
+
+  .mr-main .sc-report-header h3,
+  .mr-main .sc-report h3 {
+    font-size: 1.2rem;
+  }
+
+  .mr-playstyle {
+    margin-left: 0;
+  }
+
+  /* The bottom-sheet hero pool: four tiles a row fit a phone better than five. */
+  .sc-hero-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  /* Slimmer rank and hero tiles keep more of the summary table on screen before it scrolls sideways. */
+  .mr-rank-tile,
+  .sc-top > .sc-hero-tile.is-main {
+    width: 92px;
+  }
+
+  .mr-rank-badge {
+    width: 44px;
+    height: 44px;
+  }
+
+  .sc-summary .sc-player-cell {
+    min-width: 7rem;
+  }
 }

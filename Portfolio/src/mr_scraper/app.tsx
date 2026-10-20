@@ -71,7 +71,50 @@ const RESULT_LABEL = { win: "W", loss: "L", draw: "D" } as const;
 type PlayerResult =
   | { status: "loading"; message: string }
   | { status: "error"; message: string }
+  /** The account was not found, or has no matches to count: shown in red with a tracker.gg link instead of any data. */
+  | { status: "nodata"; message: string; name: string; season: number | null }
   | { status: "done"; player: MrPlayer; matches: MrMatch[]; seasons: number[]; rank?: RankSummary; historyPrivate?: boolean };
+
+/**
+ * The player's competitive hero page on tracker.gg, for checking a player the stats sources have no matches for.
+ * tracker.gg forbids scraping, so this is only a link for the user to open; the page never fetches it.
+ * Its `season` is the same rank-season id used here (S10 = 20, S10.5 = 21); without one tracker.gg shows the current season.
+ */
+function trackerUrl(ign: string, season: number | null): string {
+  const query = `mode=competitive${season !== null ? `&season=${season}` : ""}`;
+  return `https://tracker.gg/marvel-rivals/profile/ign/${encodeURIComponent(ign)}/heroes?${query}`;
+}
+
+type NoDataPlayer = { username: string; name: string; message: string; season: number | null };
+
+/** Players with no data, in red, with no stats shown: just why, and where to check their heroes by hand. */
+function NoDataList({ players }: { players: NoDataPlayer[] }) {
+  return (
+    <article class="sc-report mr-nodata">
+      <header class="sc-report-header">
+        <div>
+          <h3>No data found</h3>
+          <p class="sc-muted">
+            These players are left out of the table and the ban suggestions. Their tracker.gg hero pages may still list their most played heroes,
+            but treat that as incomplete data.
+          </p>
+        </div>
+      </header>
+      <ul class="mr-nodata-list">
+        {players.map((p) => (
+          <li key={p.username} class="mr-nodata-player">
+            <span class="mr-nodata-name">{p.name}</span>
+            <span class="mr-nodata-reason">{p.message}</span>
+            <a class="mr-nodata-link" href={trackerUrl(p.name, p.season)} target="_blank" rel="noopener noreferrer">
+              Top heroes on tracker.gg{p.season !== null ? ` (${seasonLabel(p.season)})` : ""} ↗
+            </a>
+            <span class="mr-incomplete">Incomplete data</span>
+          </li>
+        ))}
+      </ul>
+    </article>
+  );
+}
 
 type DonePlayer = {
   username: string;
@@ -667,6 +710,12 @@ function ResultsSummary({ usernames, results }: { usernames: string[]; results: 
     const r = results[username];
     return r?.status === "done" ? [{ username, player: r.player, matches: r.matches, seasons: r.seasons, rank: r.rank }] : [];
   });
+  // A player whose own season is unknown (not found at all) links to the newest season anyone else in the run reached.
+  const runSeason = finished.reduce<number | null>((best, p) => (p.seasons.length ? Math.max(best ?? 0, ...p.seasons) : best), null);
+  const noData: NoDataPlayer[] = usernames.flatMap((username) => {
+    const r = results[username];
+    return r?.status === "nodata" ? [{ username, name: r.name, message: r.message, season: r.season ?? runSeason }] : [];
+  });
   // Game modes present across everyone's raw history, before filtering.
   const modeTotals = new Map<number, GameModeInfo>();
   for (const p of finished) {
@@ -724,6 +773,8 @@ function ResultsSummary({ usernames, results }: { usernames: string[]; results: 
 
   return (
     <section class="sc-results">
+      {noData.length > 0 && <NoDataList players={noData} />}
+
       {done.length > 0 && (
         <>
           <BanPlayerList players={done} excluded={banExcluded} onToggle={toggleBanPlayer} />
@@ -948,11 +999,16 @@ export function MrScraper() {
           onSeason: (season, fetched) =>
             update({ status: "loading", message: `Fetched ${fetched} matches${season !== null ? ` through ${seasonLabel(season)}` : ""}…` }),
         });
-        if (historyPrivate && matches.length === 0) {
-          debugLog(`${player.name}: history private and nothing cached`);
+        if (matches.length === 0) {
+          const ign = name || player.name;
+          debugLog(`${ign}: no matches${historyPrivate ? " (history private and nothing cached)" : ""}`);
           update({
-            status: "error",
-            message: `${player.name}'s match history is private. They can show it in-game under Career > Settings > Battle History visibility.`,
+            status: "nodata",
+            name: ign,
+            season: seasons[0] ?? rank.current?.season ?? null,
+            message: historyPrivate
+              ? `Match history is private. They can show it in-game under Career > Settings > Battle History visibility.`
+              : "No matches found this season.",
           });
           continue;
         }
@@ -966,7 +1022,8 @@ export function MrScraper() {
         }
         const message = err instanceof ApiError || err instanceof Error ? err.message : "Something went wrong.";
         debugLog(`${username}: failed — ${message}`);
-        update({ status: "error", message });
+        // "Not found" is an answer, not an outage: list the player as having no data, with a tracker.gg link.
+        update(err instanceof ApiError && err.status === 404 ? { status: "nodata", name: username, season: null, message } : { status: "error", message });
       }
     }
     debugLog(signal.aborted ? "run cancelled" : "run finished");
@@ -1018,7 +1075,7 @@ export function MrScraper() {
                   return (
                     <li key={name} class={`mr-roster-player ${result ? `is-${result.status}` : ""}`} title={message ? `${name}: ${message}` : name}>
                       <span class="mr-roster-name">{name}</span>
-                      {result?.status === "error" && debug && <span class="sc-field-note">{message}</span>}
+                      {(result?.status === "error" || result?.status === "nodata") && debug && <span class="sc-field-note">{message}</span>}
                     </li>
                   );
                 })}
@@ -1030,7 +1087,7 @@ export function MrScraper() {
               const trimmed = value.trim();
               const invalid = trimmed !== "" && !USERNAME_PATTERN.test(trimmed);
               const inputId = `mr-player-${i + 1}`;
-              // The run's progress for this name colours the field: sweeping while loading, green when done, red on failure.
+              // The run's progress for this name colours the field: sweeping while loading, green when done, red on failure or no data.
               const result = results[trimmed];
               const status = result?.status;
               const message = result && result.status !== "done" ? result.message : undefined;
@@ -1062,7 +1119,7 @@ export function MrScraper() {
                   >
                     ×
                   </button>
-                  {status === "error" && debug && (
+                  {(status === "error" || status === "nodata") && debug && (
                     <p class="sc-field-note" role="alert">
                       {message}
                     </p>
@@ -1120,7 +1177,7 @@ export function MrScraper() {
       </aside>
 
       <section class="mr-main" aria-label="Results" ref={mainRef}>
-        {validNames.some((n) => results[n]?.status === "done") ? (
+        {validNames.some((n) => results[n]?.status === "done" || results[n]?.status === "nodata") ? (
           // Keyed by run so each query mounts a fresh summary (selections, open ban reasoning, meta stats).
           <ResultsSummary key={runId} usernames={validNames} results={results} />
         ) : (
