@@ -741,18 +741,6 @@ function ResultsSummary({ usernames, results }: { usernames: string[]; results: 
   const unknownMaps = new Set(done.flatMap((p) => p.analysis.unknownMapIds));
   const details = done.filter((p) => selectedPlayers.includes(p.username));
 
-  // Which seasons the fetched histories span, e.g. "S9.5–S10 (up to 40 matches per player)".
-  const allSeasons = done.flatMap((p) => p.seasons);
-  const coverage =
-    allSeasons.length > 0
-      ? (() => {
-          const lo = Math.min(...allSeasons);
-          const hi = Math.max(...allSeasons);
-          const perPlayer = Math.max(...done.map((p) => p.matches.length));
-          return `${lo === hi ? seasonLabel(hi) : `${seasonLabel(lo)}–${seasonLabel(hi)}`} (up to ${perPlayer} matches per player)`;
-        })()
-      : "";
-
   // Hero stats for the ban suggestions, fetched once per season and rank bracket and cached.
   const banLineup = done.filter((p) => !banExcluded.includes(p.username));
   const bracket = bracketFor(banLineup.map((p) => (p.rank?.current && p.rank.current.games > 0 ? p.rank.current.level : 0)));
