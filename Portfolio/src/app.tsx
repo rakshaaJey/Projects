@@ -366,9 +366,8 @@ export function App() {
             <div class="resume-entry">
             <div>
               <h3>
-                MR_Scraper{" "}
                 <a href="/mr_scraper/" target="_blank" rel="noopener noreferrer">
-                  (open)
+                  MR Scraper{" "}
                 </a>
               </h3>
             </div>
@@ -757,8 +756,45 @@ export function App() {
         cover: string;
       }
       
+      interface MyRecord {
+        id: number;
+        title: string;
+        artist: string;
+        year: number;
+        cover: string;
+      }
+
       const [songs, setSongs] = useState<MySong[]>([]);
-      
+      const [records, setRecords] = useState<MyRecord[]>([]);
+
+      useEffect(() => {
+        // Public Discogs collection: no API key needed, and the API allows cross-origin requests
+        fetch('https://api.discogs.com/users/SP4CER0CK/collection/folders/0/releases?per_page=100&sort=added&sort_order=desc')
+          .then((response) => {
+            if (!response.ok) {
+              throw new Error('Network response was not ok');
+            }
+            return response.json();
+          })
+          .then((data: any) => {
+            const extractedRecords: MyRecord[] = data.releases
+              .filter((release: any) => release.basic_information.formats.some((format: any) => format.name === 'Vinyl'))
+              .map((release: any) => ({
+                id: release.id,
+                title: release.basic_information.title,
+                // Discogs disambiguates artists with the same name as "Name (2)", so strip that
+                artist: release.basic_information.artists.map((artist: any) => artist.name.replace(/ \(\d+\)$/, '')).join(', '),
+                year: release.basic_information.year,
+                cover: release.basic_information.cover_image
+              }));
+
+            setRecords(extractedRecords);
+          })
+          .catch((error) => {
+            console.error('Error fetching Discogs collection:', error);
+          });
+      }, []);
+
       useEffect(() => {
         fetch('topTracks.json')
           .then((response) => {
@@ -808,7 +844,35 @@ export function App() {
               </div>
             ))}
           </div>
-          
+
+          {records.length > 0 && (
+            <>
+              <h2>My Vinyl Collection</h2>
+              <hr/>
+              <p>
+                I also collect vinyl! Here's what's on my shelf right now
+                (<a href="https://www.discogs.com/user/SP4CER0CK/collection" target="_blank" rel="noopener noreferrer">see it on Discogs</a>).
+              </p>
+              <div class="vinyl-grid">
+                {records.map((record) => (
+                  <a
+                    class="vinyl-item"
+                    key={record.id}
+                    href={`https://www.discogs.com/release/${record.id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    title={`${record.title} · ${record.artist}`}
+                  >
+                    <img src={record.cover} class="vinyl-cover" alt={record.title} loading="lazy" />
+                    <div class="music-title vinyl-text">{record.title}</div>
+                    <div class="music-subtitle vinyl-text">
+                      {record.artist}{record.year ? ` · ${record.year}` : ''}
+                    </div>
+                  </a>
+                ))}
+              </div>
+            </>
+          )}
         </>
       );
     }
@@ -944,7 +1008,8 @@ export function App() {
         </button>
 
         <div class="taskbar-tasks">
-          {icons.slice(0, 4).map((icon) => (
+          {/* The mobile taskbar scrolls sideways, so it has room for every window. */}
+          {(isMobile ? icons : icons.slice(0, 4)).map((icon) => (
             <button
               class="task-button"
               key={icon.id}

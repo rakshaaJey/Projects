@@ -1,5 +1,6 @@
 import { heroName, oneTrick, type PlayerAnalysis } from "./analysis.ts";
 import type { MrHeroStats, RdTierHero } from "./api.ts";
+import { HERO_PLAYSTYLES, type Playstyle } from "./data/playstyles.ts";
 
 // Ban suggestions against a scouted lineup: which heroes the analyzed players
 // lean on, weighted by how strong each hero is in the current ranked meta.
@@ -206,4 +207,42 @@ export function recommendBans(lineup: LineupPlayer[], meta: Map<string, HeroMeta
   return picked;
 }
 
-export const pct = (fraction: number | null | undefined, digits = 0) => (fraction === null || fraction === undefined ? "—" : `${(fraction * 100).toFixed(digits)}%`);
+export type TeamPlaystyle = {
+  style: Playstyle;
+  /** Set when the runner-up is within PLAYSTYLE_CLOSE of the top style, so the team is a mix of both. */
+  leaning: Playstyle | null;
+  /** Lineup share per style, 0-1, largest first. */
+  shares: { style: Playstyle; share: number }[];
+  /** Players whose heroes were counted. */
+  players: number;
+};
+
+/** Styles closer than this share are reported as a mix ("Brawl, leaning Dive"). */
+export const PLAYSTYLE_CLOSE = 0.1;
+
+/**
+ * The comp the lineup is most likely to run: each player's games are split
+ * across poke / brawl / dive by the heroes they played, and every player
+ * counts equally, so one player with a long history does not set the style.
+ */
+export function teamPlaystyle(lineup: LineupPlayer[]): TeamPlaystyle | null {
+  const totals: Record<Playstyle, number> = { poke: 0, brawl: 0, dive: 0 };
+  let players = 0;
+  for (const p of lineup) {
+    const counted = p.analysis.overall.heroes.filter((h) => HERO_PLAYSTYLES[h.hero]?.length);
+    const games = counted.reduce((n, h) => n + h.games, 0);
+    if (games === 0) continue;
+    players++;
+    // A hero listed under several styles splits its games evenly between them.
+    for (const h of counted) {
+      const styles = HERO_PLAYSTYLES[h.hero];
+      for (const style of styles) totals[style] += h.games / games / styles.length;
+    }
+  }
+  if (players === 0) return null;
+  const shares = (Object.keys(totals) as Playstyle[]).map((style) => ({ style, share: totals[style] / players })).sort((a, b) => b.share - a.share);
+  const [top, second] = shares;
+  return { style: top.style, leaning: second.share > 0 && top.share - second.share < PLAYSTYLE_CLOSE ? second.style : null, shares, players };
+}
+
+export const pct =(fraction: number | null | undefined, digits = 0) => (fraction === null || fraction === undefined ? "—" : `${(fraction * 100).toFixed(digits)}%`);

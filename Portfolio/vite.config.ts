@@ -2,10 +2,11 @@ import { defineConfig, loadEnv, type Plugin, type ProxyOptions } from 'vite'
 import preact from '@preact/preset-vite'
 import { fileURLToPath } from 'node:url'
 import { spawn } from 'node:child_process'
+import { handleSuggest } from './src/server/suggest.ts'
 
 // Extra HTML entry points besides the root desktop page. Each lives in
 // `<name>/index.html` and is served at `/<name>/`.
-const pages = ['val_scraper', 'mr_scraper']
+const pages = ['val_scraper', 'mr_scraper', 'pkmn_party']
 
 // Static hosts redirect `/val_scraper` to `/val_scraper/` on their own, but
 // Vite's dev and preview servers fall back to the root page instead. Mirror
@@ -136,6 +137,32 @@ function curlProxy(env: Record<string, string>): Plugin {
   return { name: 'rivalsdata-curl-proxy', configureServer: attach, configurePreviewServer: attach }
 }
 
+// LOCAL ONLY: the AI suggestion endpoint for pkmn_party. In production the same
+// handler runs as the Cloudflare Pages Function in functions/api/ai/suggest.ts.
+function aiSuggestEndpoint(env: Record<string, string>): Plugin {
+  if (!env.OPENAI_API_KEY) {
+    console.warn('[pkmn_party] OPENAI_API_KEY is not set in .env; AI suggestions will report it as missing. See .env.example.')
+  }
+  const attach = (server: { middlewares: { use: (path: string, fn: (req: any, res: any) => void) => void } }) => {
+    server.middlewares.use('/api/ai/suggest', (req, res) => {
+      if (req.method !== 'POST') {
+        res.statusCode = 405
+        res.end()
+        return
+      }
+      let body = ''
+      req.on('data', (chunk: Buffer) => (body += chunk))
+      req.on('end', async () => {
+        const out = await handleSuggest(body, { OPENAI_API_KEY: env.OPENAI_API_KEY, OPENAI_MODEL: env.OPENAI_MODEL }, req.socket?.remoteAddress ?? 'local')
+        res.statusCode = out.status
+        res.setHeader('Content-Type', 'application/json')
+        res.end(await out.text())
+      })
+    })
+  }
+  return { name: 'ai-suggest-endpoint', configureServer: attach, configurePreviewServer: attach }
+}
+
 // https://vite.dev/config/
 export default defineConfig(({ command, mode }) => {
   // `.env` is only consulted when running a local server (`vite` / `vite preview`).
@@ -144,7 +171,7 @@ export default defineConfig(({ command, mode }) => {
   const env = isLocalServer ? loadEnv(mode, process.cwd(), '') : {}
   const proxy = isLocalServer ? apiProxies(env) : undefined
   return {
-    plugins: [preact(), trailingSlashRedirect(), ...(isLocalServer ? [curlProxy(env)] : [])],
+    plugins: [preact(), trailingSlashRedirect(), ...(isLocalServer ? [aiSuggestEndpoint(env), curlProxy(env)] : [])],
     server: { proxy },
     preview: { proxy },
     build: {
