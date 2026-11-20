@@ -6,14 +6,31 @@ import {
   fetchRecentMatches,
   findPlayer,
   isBlockedError,
+  loadHeroMatchups,
   loadHeroStats,
   subscribeDebug,
   type DebugEntry,
+  type MrHeroMatchups,
   type MrHeroStats,
   type MrMatch,
   type MrPlayer,
 } from "./api.ts";
 import { bracketFor, heroMeta, metaFactor, pct, recommendBans, teamPlaystyle, type BanSuggestion, type MetaBracket, type TeamPlaystyle } from "./bans.ts";
+import {
+  clampSlots,
+  counterComp,
+  DEFAULT_SLOTS,
+  MAX_SLOTS_PER_ROLE,
+  MAX_SLOTS_TOTAL,
+  POOL_PER_PLAYER,
+  SLOT_LABELS,
+  SLOT_ORDER,
+  TEAM_SIZE,
+  type CompSlot,
+  type MatchupEdge,
+  type Slot,
+  type SlotCounts,
+} from "./counters.ts";
 import { PLAYSTYLE_LABELS } from "./data/playstyles.ts";
 import { ROSTERS } from "./data/rosters.ts";
 import { heroPortrait } from "./data/portraits.ts";
@@ -25,6 +42,7 @@ import {
   OBJECTIVES,
   ONE_TRICK_ALPHA,
   ONE_TRICK_MIN_GAMES,
+  ONE_TRICK_MIN_SHARE,
   oneTrick,
   playerRole,
   ROLE_MAIN_SHARE,
@@ -52,6 +70,8 @@ const STORE = {
   debug: "mr_scraper:debug.v1",
   useRosters: "mr_scraper:useRosters.v1",
   rosterTeam: "mr_scraper:rosterTeam.v1",
+  compSlots: "mr_scraper:compSlots.v1",
+  compSkipBans: "mr_scraper:compSkipBans.v1",
 } as const;
 
 // The form always shows at least this many player inputs (a full team).
@@ -244,12 +264,19 @@ type HeroStatsState =
   | { status: "done"; season: number; bracket: string; stats: MrHeroStats };
 
 /** The top heroes worth banning against this lineup, from hero overlap weighted by the current ranked meta. */
-function BanSuggestions({ lineup, statsState, bracket, excluded }: { lineup: DonePlayer[]; statsState: HeroStatsState; bracket: MetaBracket; excluded: number }) {
-  const meta = useMemo(() => (statsState.status === "done" ? heroMeta(statsState.stats, bracket) : null), [statsState, bracket]);
-  const suggestions = useMemo(
-    () => recommendBans(lineup.map((p) => ({ name: p.player.name, analysis: p.analysis })), meta),
-    [lineup, meta],
-  );
+function BanSuggestions({
+  lineup,
+  suggestions,
+  statsState,
+  bracket,
+  excluded,
+}: {
+  lineup: DonePlayer[];
+  suggestions: BanSuggestion[];
+  statsState: HeroStatsState;
+  bracket: MetaBracket;
+  excluded: number;
+}) {
   const playstyle = useMemo(() => teamPlaystyle(lineup.map((p) => ({ name: p.player.name, analysis: p.analysis }))), [lineup]);
   // The tier list has no bracket below Diamond, so the data may cover a narrower bracket than the lineup's; say which.
   const metaNote =
@@ -454,6 +481,210 @@ function BanReasoning({ suggestion: s }: { suggestion: BanSuggestion }) {
           <>No meta data for this hero, so the lineup score stands as is: {s.score.toFixed(2)}.</>
         )}
       </p>
+    </div>
+  );
+}
+
+type MatchupsState = { status: "loading" } | { status: "error"; message: string } | { status: "done"; matrix: MrHeroMatchups };
+
+/** Win rate as "53.4%". */
+const wr = (fraction: number) => pct(fraction, 1);
+
+/**
+ * Part two of the team analysis: a comp for the user's own team that counters
+ * the scouted lineup's hero pools, from the head-to-head matchup matrix. The
+ * user picks how many slots of each role their team fields (flex = any role).
+ */
+function CounterCompSection({ lineup, bans, excluded }: { lineup: DonePlayer[]; bans: BanSuggestion[]; excluded: number }) {
+  const [storedSlots, setStoredSlots] = usePersistentState<SlotCounts>(STORE.compSlots, () => DEFAULT_SLOTS);
+  const [skipBans, setSkipBans] = usePersistentState<boolean>(STORE.compSkipBans, () => false);
+  const [state, setState] = useState<MatchupsState>({ status: "loading" });
+  const [openIndex, setOpenIndex] = useState<number | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    loadHeroMatchups()
+      .then((matrix) => !cancelled && setState({ status: "done", matrix }))
+      .catch((err) => !cancelled && setState({ status: "error", message: err instanceof Error ? err.message : "failed to load" }));
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const slots = clampSlots(storedSlots);
+  const total = SLOT_ORDER.reduce((n, s) => n + slots[s], 0);
+  const banned = new Set(skipBans ? bans.map((b) => b.hero) : []);
+  const comp =
+    state.status === "done" && total > 0
+      ? counterComp(
+          lineup.map((p) => ({ name: p.player.name, analysis: p.analysis })),
+          state.matrix,
+          slots,
+          banned,
+        )
+      : null;
+  const open = openIndex !== null ? (comp?.slots[openIndex] ?? null) : null;
+
+  function step(slot: Slot, delta: number) {
+    setOpenIndex(null);
+    setStoredSlots((cur) => {
+      const c = clampSlots(cur);
+      const next = { ...c, [slot]: c[slot] + delta };
+      return clampSlots(next);
+    });
+  }
+
+  return (
+    <section class="mr-bans mr-comp" aria-label="Suggested counter comp">
+      <header class="sc-report-header">
+        <div>
+          <h3>Counter comp</h3>
+          <p class="sc-muted">
+            Heroes with the best head-to-head win rates against each player's {POOL_PER_PLAYER} most played heroes (Diamond+ matchups, updated daily). Set the roles your team
+            fields; Flex takes the best hero left from any role. Click a pick to see its matchups.
+            {excluded > 0 && ` ${excluded} player${excluded === 1 ? " is" : "s are"} left out, same as the bans.`}
+          </p>
+        </div>
+      </header>
+
+      <fieldset class="mr-modes mr-comp-slots">
+        <legend class="mr-modes-title">Your team</legend>
+        {SLOT_ORDER.map((slot) => (
+          <span key={slot} class={`mr-slot-step is-${slot}`}>
+            <span class="mr-slot-label">{SLOT_LABELS[slot]}</span>
+            <button type="button" class="mr-slot-btn" aria-label={`One fewer ${SLOT_LABELS[slot]}`} disabled={slots[slot] === 0} onClick={() => step(slot, -1)}>
+              −
+            </button>
+            <output class="mr-slot-count" aria-live="polite">
+              {slots[slot]}
+            </output>
+            <button
+              type="button"
+              class="mr-slot-btn"
+              aria-label={`One more ${SLOT_LABELS[slot]}`}
+              disabled={slots[slot] >= MAX_SLOTS_PER_ROLE || total >= MAX_SLOTS_TOTAL}
+              onClick={() => step(slot, 1)}
+            >
+              +
+            </button>
+          </span>
+        ))}
+        <label class="mr-mode" title="A ban removes the hero for both teams: leave the suggested bans out of their pool and out of our picks">
+          <input type="checkbox" checked={skipBans} onChange={(e) => setSkipBans((e.currentTarget as HTMLInputElement).checked)} />
+          Leave out the suggested bans
+        </label>
+      </fieldset>
+
+      {total !== TEAM_SIZE && total > 0 && (
+        <p class="mr-note">
+          {total} slots set; a match fields {TEAM_SIZE} heroes, so {total > TEAM_SIZE ? "the extra picks are options to swap in" : "the comp below is partial"}.
+        </p>
+      )}
+
+      {state.status === "loading" ? (
+        <p class="mr-note">Loading matchup data…</p>
+      ) : state.status === "error" ? (
+        <p class="mr-note">Matchup data unavailable ({state.message}).</p>
+      ) : total === 0 ? (
+        <p class="mr-note">Add at least one slot to get a suggestion.</p>
+      ) : !comp ? (
+        <p class="mr-note">
+          {lineup.length === 0 ? "Every player is left out, so there is no hero pool to counter." : "No hero data in the selected game modes yet, so there is nothing to counter."}
+        </p>
+      ) : (
+        <>
+          <ol class="mr-ban-list">
+            {comp.slots.map((s, i) => (
+              <CounterCard key={`${s.slot}:${s.pick.hero}`} slot={s} open={openIndex === i} onToggle={() => setOpenIndex(openIndex === i ? null : i)} />
+            ))}
+          </ol>
+          {open && <CounterReasoning slot={open} />}
+          <p class="mr-note">
+            Countering:{" "}
+            {comp.threats
+              .slice(0, 8)
+              .map((t) => `${t.hero} (${t.players.map((p) => p.name).join(", ")})`)
+              .join(" · ")}
+            {comp.threats.length > 8 && ` · +${comp.threats.length - 8} more`}
+            .{comp.unrated.length > 0 && ` No matchup data yet for ${comp.unrated.join(", ")}; left out of the scores.`}
+          </p>
+        </>
+      )}
+    </section>
+  );
+}
+
+/** One suggested pick: portrait, slot, and its expected win rate against the enemy pool. */
+function CounterCard({ slot: s, open, onToggle }: { slot: CompSlot; open: boolean; onToggle: () => void }) {
+  const { pick } = s;
+  return (
+    <li>
+      <button
+        type="button"
+        class={`mr-ban-card mr-comp-card is-${pick.role} ${open ? "is-open" : ""}`}
+        aria-expanded={open}
+        aria-label={`${SLOT_LABELS[s.slot]} pick: ${pick.hero}`}
+        onClick={onToggle}
+      >
+        <HeroPortrait hero={pick.hero} size={88} />
+        <span class="mr-ban-text">
+          <span class="mr-ban-hero">{pick.hero}</span>
+          <span class="mr-ban-summary">
+            <span class={`mr-role is-${s.slot}`}>{s.slot === "flex" ? `Flex · ${ROLE_LABELS[pick.role]}` : SLOT_LABELS[s.slot]}</span>
+          </span>
+          <span class="mr-ban-meta">
+            <span title="Expected win rate against their hero pool">{wr(pick.score)} vs pool</span>
+            {pick.best[0] && <span title={`Biggest edge: ${wr(pick.best[0].winRate)} into ${pick.best[0].hero}`}>into {pick.best[0].hero}</span>}
+          </span>
+        </span>
+      </button>
+    </li>
+  );
+}
+
+function EdgeList({ title, edges }: { title: string; edges: MatchupEdge[] }) {
+  if (edges.length === 0) return null;
+  return (
+    <div>
+      <p class="mr-modes-title">{title}</p>
+      <ul class="mr-ban-players">
+        {edges.map((e) => (
+          <li key={e.hero}>
+            <span class="mr-ban-player">
+              <HeroPortrait hero={e.hero} size={20} /> {e.hero}
+            </span>
+            <span class="mr-ban-share" title={`${e.matches.toLocaleString()} games head to head · weight ${e.weight.toFixed(2)} in their pool`}>
+              {wr(e.winRate)} WR
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+/** Why a hero was picked: its best and worst matchups against the pool, and the next best options for the slot. */
+function CounterReasoning({ slot: s }: { slot: CompSlot }) {
+  const { pick } = s;
+  return (
+    <div class="mr-ban-reasoning" role="region" aria-label={`Why pick ${pick.hero}`}>
+      <p class="mr-ban-reasoning-title">
+        <HeroPortrait hero={pick.hero} size={28} /> {pick.hero}
+      </p>
+      <div class="mr-comp-edges">
+        <EdgeList title="Good into" edges={pick.best} />
+        <EdgeList title="Struggles into" edges={pick.worst} />
+      </div>
+      <p class="mr-ban-why">
+        Expected {wr(pick.score)} win rate against their pool: the average of {pick.hero}'s head-to-head win rates against each player's {POOL_PER_PLAYER} most
+        played heroes, weighted by how often the player picks each of them.
+        {pick.coverage < 0.999 && ` Matchup data covers ${pct(pick.coverage)} of their games.`}
+      </p>
+      {s.alternatives.length > 0 && (
+        <p class="mr-ban-why">
+          Also good for this {s.slot === "flex" ? "flex" : SLOT_LABELS[s.slot]} slot: {s.alternatives.map((a) => `${a.hero} (${wr(a.score)})`).join(", ")}.
+        </p>
+      )}
     </div>
   );
 }
@@ -804,6 +1035,11 @@ function ResultsSummary({ usernames, results }: { usernames: string[]; results: 
       cancelled = true;
     };
   }, [metaSeason, done.length, bracket.label]);
+  const meta = useMemo(() => (statsState.status === "done" ? heroMeta(statsState.stats, bracket) : null), [statsState, bracket]);
+  const banSuggestions = recommendBans(
+    banLineup.map((p) => ({ name: p.player.name, analysis: p.analysis })),
+    meta,
+  );
 
   return (
     <section class="sc-results">
@@ -828,7 +1064,9 @@ function ResultsSummary({ usernames, results }: { usernames: string[]; results: 
             </fieldset>
           )}
 
-          <BanSuggestions lineup={banLineup} statsState={statsState} bracket={bracket} excluded={done.length - banLineup.length} />
+          <BanSuggestions lineup={banLineup} suggestions={banSuggestions} statsState={statsState} bracket={bracket} excluded={done.length - banLineup.length} />
+
+          <CounterCompSection lineup={banLineup} bans={banSuggestions} excluded={done.length - banLineup.length} />
 
           <div class="sc-table-scroll sc-summary-scroll">
             <table class="sc-table sc-summary">
@@ -897,7 +1135,8 @@ function ResultsSummary({ usernames, results }: { usernames: string[]; results: 
           {done.some((p) => oneTrick(p.analysis.overall)) && (
             <p class="mr-note">
               <span class="mr-one-trick">One-trick</span> = the most played hero leads the second most played by more than chance would explain (one-sided
-              binomial test, p &lt; {ONE_TRICK_ALPHA}), with at least {ONE_TRICK_MIN_GAMES} counted games. Hover a badge for the numbers.
+              binomial test, p &lt; {ONE_TRICK_ALPHA}) and takes at least {Math.round(ONE_TRICK_MIN_SHARE * 100)}% of counted games, with at least{" "}
+              {ONE_TRICK_MIN_GAMES} counted games. Hover a badge for the numbers.
             </p>
           )}
 
@@ -1239,7 +1478,7 @@ export function MrScraper() {
           <ResultsSummary key={runId} usernames={validNames} results={results} />
         ) : anyBlocked && !running ? null : (
           <p class="mr-empty sc-muted">
-            {running ? "Looking players up…" : "Enter player names or UIDs on the left and run the analysis. Results appear here."}
+            {running ? "Looking players up…" : "Enter player names or UIDs and run the analysis. Results appear here."}
           </p>
         )}
       </section>

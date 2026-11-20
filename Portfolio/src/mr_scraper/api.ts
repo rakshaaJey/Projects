@@ -31,6 +31,7 @@
 //   POST /find-player            body {"name": "..."}   -> [{aid, name, cur_head_icon_id}, ...]
 //   GET  /player/{aid}?season=N  (no season = current)  -> profile + last 20 matches of that season
 //   GET  /heroes/stats?season=N                          -> per-rank hero pick/win/ban totals
+//   GET  /hero-matchups                                  -> head-to-head matrix, see MrHeroMatchups
 
 import { ApiError, requestJson, type RequestOptions } from "../shared/http.ts";
 import { summarizeRank, type RankSummary } from "./rank.ts";
@@ -269,6 +270,8 @@ const TTL = {
   currentSeason: 10 * 60 * 1000,
   pastSeason: 7 * 24 * 60 * 60 * 1000,
   heroStats: 6 * 60 * 60 * 1000,
+  // The site recomputes its matchup matrix once a day.
+  heroMatchups: 12 * 60 * 60 * 1000,
 } as const;
 
 let nextSlotAt = 0;
@@ -775,6 +778,31 @@ export async function fetchHeroStats(season: number, options: RequestOptions = {
     bans: body.bans,
     heroes: body.heroes,
   };
+}
+
+// ---------------------------------------------------------------------------
+// Hero matchups (counters): rivalsmeta.com only
+// ---------------------------------------------------------------------------
+
+/**
+ * rivalsmeta.com's head-to-head matrix behind its /characters/<hero>/matchups
+ * pages: `[hero][opponent]` = games where the two were on opposing teams, and
+ * how many of those `hero`'s team won. Keyed by hero id (as strings). The site
+ * says it covers Diamond through One Above All and is updated daily. Checked
+ * 2026-11-20: every pair mirrors (wins[a][b] + wins[b][a] = matches), the
+ * smallest pair had 959 games, and a hero against itself is exactly 50%.
+ */
+export type MrHeroMatchups = Record<string, Record<string, { matches: number; wins: number }>>;
+
+/** The hero-vs-hero matrix for the counter comp, cached for half a day. No other source publishes one, so there is no fallback. */
+export async function loadHeroMatchups(options: RequestOptions = {}): Promise<MrHeroMatchups> {
+  const cacheKey = "heroMatchups";
+  const cached = cacheRead<MrHeroMatchups>(cacheKey, TTL.heroMatchups);
+  if (cached) return cached;
+  const body = await mrRequest<MrHeroMatchups>(`/hero-matchups`, options);
+  if (!body || typeof body !== "object" || Object.keys(body).length === 0) throw new ApiError("The matchup data came back empty.", 502);
+  cacheWrite(cacheKey, body);
+  return body;
 }
 
 /**

@@ -191,12 +191,15 @@ function finish(acc: Acc): Breakdown {
  * more games than their second most played one. "Significantly" is a one-sided
  * exact binomial test: of the games split between those two heroes, would a
  * lead this big be unlikely (p < ONE_TRICK_ALPHA) if the player really split
- * them evenly? So 34 vs 10 qualifies (p ≈ 0.0002), 8 vs 1 does (p ≈ 0.018),
- * 6 vs 1 does not (p ≈ 0.063). A small overall minimum stops a 5-game sample
- * from counting.
+ * them evenly? So 34 vs 10 qualifies (p ≈ 0.0002), 10 vs 1 does (p ≈ 0.006),
+ * 9 vs 1 does not (p ≈ 0.011), nor does 8 vs 1 (p ≈ 0.020). The hero must also
+ * take at least ONE_TRICK_MIN_SHARE of all counted games, so a player with a
+ * wide pool is not called a one-trick just because their top two are lopsided.
+ * A small overall minimum stops a 5-game sample from counting.
  */
 export const ONE_TRICK_MIN_GAMES = 5;
-export const ONE_TRICK_ALPHA = 0.05;
+export const ONE_TRICK_ALPHA = 0.01;
+export const ONE_TRICK_MIN_SHARE = 0.4;
 
 export type OneTrick = {
   hero: string;
@@ -228,6 +231,7 @@ export function binomialUpperTail(k: number, n: number): number {
 export function oneTrick(b: Breakdown): OneTrick | null {
   const top = b.heroes[0];
   if (!top || b.games < ONE_TRICK_MIN_GAMES) return null;
+  if (top.games / b.games < ONE_TRICK_MIN_SHARE) return null;
   const second = b.heroes[1] ?? null;
   const pValue = second ? binomialUpperTail(top.games, top.games + second.games) : 0;
   if (pValue >= ONE_TRICK_ALPHA) return null;

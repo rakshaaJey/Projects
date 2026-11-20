@@ -61,6 +61,7 @@ export const HERO_ROLES: Record<number, Role> = {
   1065: "tank", // Rogue
   1066: "tank", // The Hood
   1067: "dps", // Gorr The God Butcher
+  1068: "support", // Nightcrawler (class 3 in rivalsmeta.com's hero list, 2026-11-20)
   10571: "tank", // Deadpool (Vanguard)
   10572: "dps", // Deadpool (Duelist)
   10573: "support", // Deadpool (Strategist)

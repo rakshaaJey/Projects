@@ -71,5 +71,6 @@ export const HERO_PLAYSTYLES: Record<string, Playstyle[]> = {
   Gambit: ["dive"], 
   "White Fox": ["dive"], 
   Jubilee: ["brawl"],
+  Nightcrawler: ["dive"], // unsure: teleporting melee strategist, new in S11
   "Deadpool (Strategist)": ["brawl"],
 };

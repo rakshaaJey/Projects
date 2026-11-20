@@ -7,12 +7,27 @@ import notepadIcon from "./assets/desktop/Generic Text Document.png";
 import contact from "./assets/desktop/Search for people.png";
 import music from "./assets/desktop/My Music.png";
 import games from "./assets/desktop/Game Controller.png";
+import journalIcon from "./assets/desktop/Journal Note.png";
+import videoIcon from "./assets/desktop/Generic Video.png";
+import helpIcon from "./assets/desktop/HLP.png";
 
 import bg3 from "./assets/games/bg3.jpg";
 import stardewValley from "./assets/games/stardewValley.png";
 import cs2 from "./assets/games/Cs2.jpg";
 import eldenRing from "./assets/games/eldenRing.jpg";
 import balatro from "./assets/games/balatro.jpg";
+import marvelRivals from "./assets/games/marvelRivals.jpg";
+import itTakesTwo from "./assets/games/itTakesTwo.jpg";
+import ballXPit from "./assets/games/ballXPit.jpg";
+import slimeRancher2 from "./assets/games/slimeRancher2.jpg";
+import divinityOS2 from "./assets/games/divinityOS2.jpg";
+import valorant from "./assets/games/valorant.jpg";
+import pokemonBlack2 from "./assets/games/pokemonBlack2.jpg";
+import fireEmblemThreeHouses from "./assets/games/fireEmblemThreeHouses.jpg";
+import fireEmblemFortunesWeave from "./assets/games/fireEmblemFortunesWeave.jpg";
+import pokemonPokopia from "./assets/games/pokemonPokopia.jpg";
+
+import gameReviews from "./data/game-reviews.json";
 
 import { DraggableIcon } from "./draggable";
 import "./app.css";
@@ -86,9 +101,689 @@ type WindowProps = {
   onClose: () => void;
   onFocus?: () => void;
   zIndex?: number;
+  /** Extra class on the content area, for windows that bring their own chrome (the Word resume). */
+  contentClass?: string;
 };
 
-function XPWindow({ title, children, onClose, onFocus, zIndex }: WindowProps) {
+/**
+ * Title-bar text per window: the name of the program each window is styled as,
+ * except where Rakshaa chose a title (resume.doc, My Vinyl Player, Games).
+ */
+const WINDOW_TITLES: Record<string, string> = {
+  notepad: "resume.doc",
+  contact: "Address Book",
+  music: "My Vinyl Player",
+  about: "SpaceRock's Space",
+  games: "Games",
+  folder: "Projects",
+};
+
+/** Content-area class per window, for windows styled as a whole program (see app.css). */
+const WINDOW_CONTENT_CLASS: Record<string, string> = {
+  notepad: "is-word",
+  contact: "is-card",
+  music: "is-player",
+  about: "is-profile",
+  games: "is-steam",
+  folder: "is-explorer",
+};
+
+/** Tabs along the top of the Address Book contact card; only Summary is real. */
+const CARD_TABS = ["Summary", "Name", "Home", "Business", "Personal", "Other", "Digital IDs"];
+
+const CONTACT_FIELDS: { label: string; value: string; href?: string }[] = [
+  { label: "E-Mail", value: "rakshaajeyarajah@gmail.com", href: "mailto:rakshaajeyarajah@gmail.com" },
+  { label: "LinkedIn", value: "Rakshaa Jeyarajah", href: "https://www.linkedin.com/in/rakshaa-jeyarajah-880427250/" },
+  { label: "GitHub", value: "RakshaaJey", href: "https://github.com/rakshaaJey" },
+  { label: "X/Twitter", value: "SpaceRock", href: "https://x.com/sp4cer0ck?s=21&t=tc9N0VsXk2wx8TYMiyL5LQ" },
+  { label: "Discord", value: "space_rock" },
+];
+
+/** Word 97 menu bar; decorative, with the access-key letter underlined. */
+const WORD_MENUS = ["File", "Edit", "View", "Insert", "Format", "Tools", "Table", "Window", "Help"];
+
+interface MyRecord {
+  id: number;
+  title: string;
+  artist: string;
+  year: number;
+  cover: string;
+}
+
+const VIZ_BARS = 14;
+
+/** "m:ss" for the player's elapsed-time readout. */
+const playTime = (seconds: number) => `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
+
+/**
+ * The vinyl collection as a retro digital music player: a now-playing display
+ * (cover, scrolling title, timer, visualizer) over transport buttons and a
+ * playlist of every record. Nothing actually plays; the buttons move through
+ * the collection and start or stop the timer and visualizer.
+ */
+function VinylPlayer({ records, status }: { records: MyRecord[]; status: "loading" | "error" | "ready" }) {
+  const [current, setCurrent] = useState(0);
+  const [playing, setPlaying] = useState(true);
+  const [elapsed, setElapsed] = useState(0);
+  const record = records[Math.min(current, records.length - 1)];
+
+  useEffect(() => {
+    if (!playing || !record) return;
+    const timer = setInterval(() => setElapsed((s) => s + 1), 1000);
+    return () => clearInterval(timer);
+  }, [playing, record]);
+
+  // Until the shelf loads (or if it can't), the display says so instead of showing a record.
+  if (status !== "ready" || !record) {
+    return (
+      <div class="player">
+        <div class="player-bar">
+          <span>MY VINYL PLAYER</span>
+        </div>
+        <div class="player-display is-empty">
+          <div class="player-lcd">
+            <span class="player-time">{status === "error" ? "NO DISC" : "--:--"}</span>
+            <span>{status === "error" ? "Couldn't load the record shelf. Try again later." : "Loading the record shelf…"}</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  function select(index: number) {
+    setCurrent((index + records.length) % records.length);
+    setElapsed(0);
+    setPlaying(true);
+  }
+
+  function stop() {
+    setPlaying(false);
+    setElapsed(0);
+  }
+
+  const label = `${current + 1}. ${record.artist} - ${record.title}${record.year ? ` (${record.year})` : ""}`;
+
+  return (
+    <div class="player">
+      <div class="player-bar">
+        <span>MY VINYL PLAYER</span>
+        <span>{records.length} records on the shelf</span>
+      </div>
+
+      <div class="player-display">
+        <a
+          class="player-cover"
+          href={`https://www.discogs.com/release/${record.id}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          title={`${record.title} · ${record.artist}`}
+        >
+          <img src={record.cover} alt={record.title} />
+        </a>
+        <div class="player-lcd">
+          <div class="player-lcd-top">
+            <span class="player-state">{playing ? "▶" : elapsed ? "❚❚" : "■"}</span>
+            <span class="player-time">{playTime(elapsed)}</span>
+          </div>
+          <div class="player-marquee" aria-live="polite">
+            {/* Doubled so the scroll loops without a gap. */}
+            <span class={playing ? "is-scrolling" : ""} key={record.id}>
+              {label}&nbsp;&nbsp;***&nbsp;&nbsp;{label}&nbsp;&nbsp;***&nbsp;&nbsp;
+            </span>
+          </div>
+          <div class="player-meta">
+            <span>33⅓ RPM</span>
+            <span>STEREO</span>
+            <span>
+              {current + 1}/{records.length}
+            </span>
+          </div>
+          <div class={`player-viz ${playing ? "is-playing" : ""}`} aria-hidden="true">
+            {Array.from({ length: VIZ_BARS }, (_, i) => (
+              <span key={i} style={{ animationDelay: `${-((i * 0.37) % 1.1).toFixed(2)}s`, animationDuration: `${0.6 + ((i * 0.23) % 0.7)}s` }} />
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div class="player-controls">
+        <button type="button" class="player-btn" aria-label="Previous record" onClick={() => select(current - 1)}>
+          ⏮
+        </button>
+        <button type="button" class={`player-btn ${playing ? "is-on" : ""}`} aria-label="Play" onClick={() => setPlaying(true)}>
+          ▶
+        </button>
+        <button type="button" class={`player-btn ${!playing && elapsed ? "is-on" : ""}`} aria-label="Pause" onClick={() => setPlaying(false)}>
+          ❚❚
+        </button>
+        <button type="button" class="player-btn" aria-label="Stop" onClick={stop}>
+          ■
+        </button>
+        <button type="button" class="player-btn" aria-label="Next record" onClick={() => select(current + 1)}>
+          ⏭
+        </button>
+      </div>
+
+      <ol class="player-playlist" aria-label="Playlist">
+        {records.map((r, i) => (
+          <li key={r.id}>
+            <button type="button" class={`player-track ${i === current ? "is-current" : ""}`} onClick={() => select(i)}>
+              <span class="player-track-num">{i + 1}.</span>
+              <span class="player-track-name">
+                {r.artist} - {r.title}
+              </span>
+              <span class="player-track-year">{r.year || ""}</span>
+            </button>
+          </li>
+        ))}
+      </ol>
+    </div>
+  );
+}
+
+/**
+ * Rakshaa's games. Steam ones carry hours and achievements from the Steam library (2026-11-20); the rest (Riot, Nintendo) are added as
+ * non-Steam games with the hours Rakshaa gave and no achievement data.
+ */
+type Game = {
+  title: string;
+  hours: number;
+  /** "unlocked/total", or null when the platform has no achievements. */
+  achievements: string | null;
+  steam: boolean;
+  cover: string;
+  /** One or two sentences about the game, condensed from its Wikipedia article (2026-11-20). */
+  about: string;
+};
+
+const GAMES: Game[] = [
+  {
+    title: "Valorant", hours: 1283, achievements: null, steam: false, cover: valorant,
+    about: "A free-to-play 5v5 tactical hero shooter from Riot Games. It borrows Counter-Strike's buy menu and precise gunplay, and adds agents with unique abilities.",
+  },
+  {
+    title: "Baldur's Gate 3", hours: 656.7, achievements: "50/54", steam: true, cover: bg3,
+    about: "Larian Studios' role-playing game set in the world of Dungeons & Dragons. Your party searches for a cure for the mind flayer parasites infecting their brains, solo or in co-op.",
+  },
+  {
+    title: "Pokémon Black 2", hours: 538, achievements: null, steam: false, cover: pokemonBlack2,
+    about: "The first direct sequel in the main Pokémon series, released for the Nintendo DS in 2012. It returns to the Unova region two years after Pokémon Black, with Black Kyurem as its legendary.",
+  },
+  {
+    title: "Stardew Valley", hours: 249.5, achievements: "30/49", steam: true, cover: stardewValley,
+    about: "A farm life sim where you inherit your grandfather's run-down farm. You grow crops, raise animals, fish and mine, and get to know (and maybe marry) the townspeople.",
+  },
+  {
+    title: "Fire Emblem: Three Houses", hours: 247, achievements: null, steam: false, cover: fireEmblemThreeHouses,
+    about: "A tactical RPG for the Nintendo Switch where you teach at a military academy. You lead one of three student houses through turn-based battles that shape the fate of the continent.",
+  },
+  {
+    title: "Counter-Strike 2", hours: 167.3, achievements: "1/1", steam: true, cover: cs2,
+    about: "Valve's free-to-play tactical shooter and the successor to CS:GO. Counter-Terrorists and Terrorists face off in objective-based rounds.",
+  },
+  {
+    title: "Elden Ring", hours: 159.7, achievements: "25/42", steam: true, cover: eldenRing,
+    about: "FromSoftware's open-world action RPG, with worldbuilding by George R. R. Martin. You cross the Lands Between to restore the shattered Elden Ring and become Elden Lord.",
+  },
+  {
+    title: "Marvel Rivals", hours: 120.4, achievements: "16/49", steam: true, cover: marvelRivals,
+    about: "NetEase's free-to-play 6v6 hero shooter with a roster of Marvel heroes and villains. Teams combine abilities and team-ups on destructible maps.",
+  },
+  {
+    title: "Balatro", hours: 109.9, achievements: "27/31", steam: true, cover: balatro,
+    about: "A poker-themed roguelike deck-builder from solo developer LocalThunk. You play poker hands to hit score targets, and build wild combos with Jokers along the way.",
+  },
+  {
+    title: "It Takes Two", hours: 92.6, achievements: "10/20", steam: true, cover: itTakesTwo,
+    about: "Hazelight's co-op-only action-adventure about Cody and May, a couple on the brink of divorce. Turned into dolls, they have to work together to get back to their bodies.",
+  },
+  {
+    title: "BALL x PIT", hours: 85, achievements: "63/63", steam: true, cover: ballXPit,
+    about: "A roguelike that mixes Arkanoid-style ball bouncing with city building. Resources from each run upgrade your town, unlocking new characters and abilities.",
+  },
+  {
+    title: "Pokémon Pokopia", hours: 62, achievements: null, steam: false, cover: pokemonPokopia,
+    about: "A cozy Pokémon life sim for the Nintendo Switch 2. A Ditto transformed into a human rebuilds a post-apocalyptic world with the Pokémon it meets.",
+  },
+  {
+    title: "Slime Rancher 2", hours: 56.8, achievements: "27/27", steam: true, cover: slimeRancher2,
+    about: "The sequel to Slime Rancher, a first-person farm sim about collecting and raising adorable slimes. Beatrix LeBeau explores the mysterious Rainbow Island.",
+  },
+  {
+    title: "Divinity: Original Sin 2", hours: 35.1, achievements: "9/97", steam: true, cover: divinityOS2,
+    about: "Larian Studios' turn-based RPG, and a spiritual predecessor to Baldur's Gate 3. You play a persecuted Source magic user fighting the monstrous Voidwoken in the world of Rivellon.",
+  },
+  {
+    title: "Fire Emblem: Fortune's Weave", hours: 15.2, achievements: null, steam: false, cover: fireEmblemFortunesWeave,
+    about: "A 2026 tactical RPG for the Nintendo Switch 2, set in the same world as Three Houses. Four warriors fight in the Dagdan Empire's Heroic Games to win their heart's desire.",
+  },
+];
+
+type GameSort = "hours" | "name" | "achievements";
+
+/** Unlocked / total, or null with no achievement data. */
+function achievementProgress(g: Game): { got: number; total: number; share: number } | null {
+  if (!g.achievements) return null;
+  const [got, total] = g.achievements.split("/").map(Number);
+  return total ? { got, total, share: got / total } : null;
+}
+
+/**
+ * Rakshaa's own reviews, written in src/data/game-reviews.json and keyed by the
+ * game's title exactly as in GAMES. `recommended` is true (thumbs up), false
+ * (thumbs down), a score such as "10/10", or null (no verdict). A game with
+ * neither a verdict nor review text shows no panel.
+ */
+type GameReview = { recommended?: boolean | string | null; review?: string };
+const REVIEWS = gameReviews as Record<string, GameReview>;
+
+const STEAM_MENUS = ["Steam", "View", "Friends", "Games", "Help"];
+
+/**
+ * The games window as an old (circa 2011) Steam client library: a menu bar,
+ * a searchable and sortable game list on the left, and the
+ * selected game's page on the right. The menus, tabs and Play button are decorative.
+ */
+function SteamLibrary() {
+  const [sort, setSort] = useState<GameSort>("hours");
+  const [query, setQuery] = useState("");
+  const [selected, setSelected] = useState(GAMES[0].title);
+
+  const q = query.trim().toLowerCase();
+  const games = GAMES.filter((g) => !q || g.title.toLowerCase().includes(q)).sort((a, b) => {
+    if (sort === "name") return a.title.localeCompare(b.title);
+    if (sort === "achievements") return (achievementProgress(b)?.share ?? -1) - (achievementProgress(a)?.share ?? -1) || b.hours - a.hours;
+    return b.hours - a.hours;
+  });
+  const game = GAMES.find((g) => g.title === selected) ?? GAMES[0];
+  const progress = achievementProgress(game);
+  const review = REVIEWS[game.title];
+  const reviewText = review?.review?.trim();
+  const verdict = review?.recommended;
+  const score = typeof verdict === "string" && verdict.trim() ? verdict.trim() : null;
+  const hasVerdict = typeof verdict === "boolean" || score !== null;
+
+  return (
+    <div class="stm">
+      <div class="stm-chrome" aria-hidden="true">
+        <div class="stm-menu">
+          {STEAM_MENUS.map((m) => (
+            <span key={m}>{m}</span>
+          ))}
+        </div>
+      </div>
+
+      <div class="stm-body">
+        <aside class="stm-side">
+          <input
+            class="stm-search"
+            type="search"
+            placeholder="Search"
+            aria-label="Search games"
+            value={query}
+            onInput={(e) => setQuery((e.currentTarget as HTMLInputElement).value)}
+          />
+          <label class="stm-sort">
+            <span>ALL GAMES</span>
+            <select aria-label="Sort games" value={sort} onChange={(e) => setSort((e.currentTarget as HTMLSelectElement).value as GameSort)}>
+              <option value="hours">by hours played</option>
+              <option value="name">by name</option>
+              <option value="achievements">by achievements</option>
+            </select>
+          </label>
+          <ul class="stm-list">
+            {games.map((g) => (
+              <li key={g.title}>
+                <button type="button" class={`stm-item ${g.title === game.title ? "is-selected" : ""}`} onClick={() => setSelected(g.title)}>
+                  <img src={g.cover} alt="" />
+                  <span>{g.title}</span>
+                </button>
+              </li>
+            ))}
+            {games.length === 0 && <li class="stm-none">No games match "{query}"</li>}
+          </ul>
+          <div class="stm-add" aria-hidden="true">
+            + ADD A GAME...
+          </div>
+        </aside>
+
+        <section class="stm-main" aria-label={game.title}>
+          <div class="stm-hero" style={{ backgroundImage: `url(${game.cover})` }}>
+            <img class="stm-hero-cover" src={game.cover} alt="" />
+            <h3 class="stm-title">{game.title}</h3>
+          </div>
+
+          <div class="stm-playbar">
+            <span class="stm-play" title="Not installed on this desktop">
+              ▶ PLAY
+            </span>
+            <div class="stm-stat">
+              <span class="stm-stat-label">YOU'VE PLAYED</span>
+              <span class="stm-stat-value">{game.hours.toLocaleString()} hours</span>
+            </div>
+          </div>
+
+          <div class="stm-panel">
+            <h4 class="stm-panel-title">ACHIEVEMENTS</h4>
+            {progress ? (
+              <>
+                <p>
+                  You have unlocked <b>{progress.got}/{progress.total}</b> ({Math.round(progress.share * 100)}%)
+                  {progress.got === progress.total && <span class="stm-perfect">★ Perfect game</span>}
+                </p>
+                <div class="stm-bar" role="progressbar" aria-valuenow={progress.got} aria-valuemin={0} aria-valuemax={progress.total}>
+                  <span style={{ width: `${progress.share * 100}%` }} />
+                </div>
+              </>
+            ) : (
+              <p class="stm-muted">{game.steam ? "This game has no achievements." : "Non-Steam game: no achievements available."}</p>
+            )}
+          </div>
+
+          <div class="stm-panel">
+            <h4 class="stm-panel-title">ABOUT THE GAME</h4>
+            <p>{game.about}</p>
+          </div>
+
+          {(reviewText || hasVerdict) && (
+            <div class="stm-panel stm-review">
+              <h4 class="stm-panel-title">MY REVIEW</h4>
+              {hasVerdict && (
+                <p class={`stm-verdict ${score ? "is-score" : verdict ? "is-yes" : "is-no"}`}>
+                  <span class="stm-thumb" aria-hidden="true">
+                    {score ? "★" : verdict ? "👍" : "👎"}
+                  </span>
+                  {score ? `Rated ${score}` : verdict ? "Recommended" : "Not Recommended"}
+                  <span class="stm-verdict-hours">{game.hours.toLocaleString()} hrs on record</span>
+                </p>
+              )}
+              {reviewText && <p class="stm-review-text">{reviewText}</p>}
+            </div>
+          )}
+        </section>
+      </div>
+    </div>
+  );
+}
+
+type Project = {
+  name: string;
+  /** Shown as the file type in the tile and Details pane. */
+  kind: string;
+  icon: string;
+  event?: string;
+  award?: string;
+  link?: { href: string; label: string };
+  bullets: string[];
+};
+
+const PROJECTS: Project[] = [
+  {
+    name: "S&P Inclusion Predictor",
+    kind: "Data Science",
+    icon: ieIcon,
+    event: "Laurier Data Minds 2026",
+    award: "2nd Place",
+    bullets: [
+      "Developed an S&P 500 inclusion prediction model using a two-stage pipeline combining hard eligibility filters with multi-factor scoring",
+      "Applied financial screening criteria including market capitalization, domicile, GAAP profitability, liquidity, trading volume, and public float to identify eligible candidate firms",
+      "Built a scoring model using sector gap analysis, S&P MidCap 400 membership, profitability margin, market capitalization, and FinBERT-based news sentiment analysis",
+      "Created a dashboard/demo to visualize candidate filtering, score breakdowns, and top-ranked predicted S&P 500 additions",
+      "Backtested the model across 40 historical S&P inclusion events, with selected additions appearing in the model’s top 10 rankings 78% of the time",
+      "Identified limitations and future improvements, including enhanced backtesting, automated weight optimization, and expanded NLP sentiment integration",
+    ],
+  },
+  {
+    name: "Deepfake Research Presentation",
+    kind: "Research",
+    icon: videoIcon,
+    event: "Map the System 2026",
+    award: "Finalist",
+    bullets: [
+      "Selected as a finalist for Map the System 2026 for a systems-thinking research project analyzing AI-powered deepfake sexual exploitation in North America",
+      "Conducted research on non-consensual intimate-image deepfakes, focusing on technological accessibility, legal gaps, platform accountability, and gender-based harm",
+      "Developed system maps, stakeholder maps, an Iceberg Model, and PESTEL analysis to identify root causes, reinforcing loops, and intervention points",
+      "Proposed a three-pronged intervention strategy addressing legal reform, stakeholder collaboration, and public awareness through the Six Conditions of Systems Change framework",
+      "Presented findings on deepfake NCII, including the role of AI accessibility, weak legal protections, and societal stigma in sustaining online exploitation",
+    ],
+  },
+  {
+    name: "Cloud Cost Budgeting Platform",
+    kind: "Software",
+    icon: ieIcon,
+    event: "Magnet Forensics",
+    bullets: [
+      "Created a budgeting platform that integrated with current cloud cost collection practices to allow users to seamlessly budget cloud costs for the next year",
+      "Provides users with a variety of automated forecasts based on trend analysis and moving averages based on current costs",
+      "Allows users to export data in various formats to easily integrate with budget keeping practices and data analysis",
+      "Leveraged AI solutions to streamline the development process and create a more intuitive user experience",
+    ],
+  },
+  {
+    name: "VLR API",
+    kind: "Software",
+    icon: ieIcon,
+    bullets: [
+      "Created an unofficial Valorant API for e-sports with easy access to a variety of data surrounding the game, including player stats, match history, kda and more",
+    ],
+  },
+  {
+    name: "MR Scraper",
+    kind: "Web App",
+    icon: helpIcon,
+    link: { href: "/mr_scraper/", label: "Open MR Scraper" },
+    bullets: [
+      "Built a Marvel Rivals scouting tool that looks up a full enemy lineup and shows each player's competitive match history, current and peak rank, and most-played heroes overall and per objective mode",
+      "Suggests bans by weighing the lineup's hero pools against the current ranked meta, with one-trick detection and a breakdown of how each score came about",
+      "Pulls from two community stats APIs behind same-origin proxies with automatic fallback, caching, and rate-limit handling; built with Preact, TypeScript and Cloudflare Pages Functions",
+    ],
+  },
+  {
+    name: "Integrated Case Competition",
+    kind: "Case Competition",
+    icon: journalIcon,
+    award: "Semi Finalist",
+    bullets: [
+      "Researched, analyzed and presented consumer purchasing and foot traffic trends in the Waterloo Region",
+      "Strong quantitative analysis skills as showcased through statistical analysis & projection techniques to provide insight into current and future trends",
+      "Presented data surrounding the feasibility, viability, and desirability in a clear, concise, and accurate PowerPoint",
+    ],
+  },
+  {
+    name: "Housing Market Predictor",
+    kind: "Data Analysis",
+    icon: journalIcon,
+    event: "DataFest Hackathon 2025",
+    award: "2nd Place",
+    bullets: [
+      "Researched, planned and presented insights surrounding the United States commercial real estate market",
+      "Strong quantitative analysis skills as showcased through statistical analysis & projection techniques to provide insight into current and future trends",
+      "Researched, collected, analyzed, and summarized information and trends surrounding the commercial real estate market in the United States",
+    ],
+  },
+  {
+    name: "Scouting App",
+    kind: "Software",
+    icon: ieIcon,
+    bullets: [
+      "Developed a scouting app for my robotics team to easily collect and analyze data on our own and our competitors' robots during competitions",
+      "Simple UI & UX allowed for quick and efficient data collection during the fast paced environment of competitions, leading to better strategy decisions and improved robot performance",
+    ],
+  },
+];
+
+const EXPLORER_MENUS = ["File", "Edit", "View", "Favorites", "Tools", "Help"];
+const PROJECTS_PATH = "C:\\Documents and Settings\\Rakshaa\\My Documents\\Projects";
+
+/**
+ * The projects window as a Windows XP Explorer folder: menu bar, a toolbar
+ * whose Back / Forward / Up buttons work, an address bar, the blue task pane on
+ * the left, and the projects as tiles. Opening a tile shows that project's
+ * write-up in place, like opening a file.
+ */
+function ExplorerProjects({ openWindow }: { openWindow: (id: string) => void }) {
+  const [open, setOpen] = useState<string | null>(null);
+  const [forward, setForward] = useState<string | null>(null);
+  const project = PROJECTS.find((p) => p.name === open) ?? null;
+  const awards = PROJECTS.filter((p) => p.award).length;
+
+  function openProject(name: string) {
+    setOpen(name);
+    setForward(null);
+  }
+  function back() {
+    if (!open) return;
+    setForward(open);
+    setOpen(null);
+  }
+
+  const otherPlaces = [
+    { label: "About Me", window: "about", icon: ieIcon },
+    { label: "resume.doc", window: "notepad", icon: notepadIcon },
+    { label: "Address Book", window: "contact", icon: contact },
+  ];
+
+  return (
+    <div class="exp">
+      <div class="exp-menu" aria-hidden="true">
+        {EXPLORER_MENUS.map((m) => (
+          <span key={m}>
+            <u>{m[0]}</u>
+            {m.slice(1)}
+          </span>
+        ))}
+      </div>
+
+      <div class="exp-toolbar">
+        <button type="button" class="exp-tool" disabled={!open} onClick={back}>
+          <span class="exp-arrow is-back" aria-hidden="true" /> Back
+        </button>
+        <button type="button" class="exp-tool" disabled={!forward || !!open} aria-label="Forward" onClick={() => forward && openProject(forward)}>
+          <span class="exp-arrow is-forward" aria-hidden="true" />
+        </button>
+        <button type="button" class="exp-tool" disabled={!open} aria-label="Up" onClick={back}>
+          <span class="exp-up" aria-hidden="true" />
+        </button>
+        <span class="exp-tool-sep" />
+        <span class="exp-tool is-static" aria-hidden="true">
+          <span class="exp-search-icon" /> Search
+        </span>
+        <span class="exp-tool is-static" aria-hidden="true">
+          <img src={folderIcon} alt="" /> Folders
+        </span>
+      </div>
+
+      <div class="exp-address">
+        <span class="exp-address-label">
+          A<u>d</u>dress
+        </span>
+        <span class="exp-address-box">
+          <img src={open ? (project?.icon ?? folderIcon) : folderIcon} alt="" />
+          <span>
+            {PROJECTS_PATH}
+            {project && `\\${project.name}`}
+          </span>
+        </span>
+        <span class="exp-go" aria-hidden="true">
+          <span class="exp-go-icon" /> Go
+        </span>
+      </div>
+
+      <div class="exp-body">
+        <aside class="exp-tasks">
+          <section class="exp-task-box">
+            <h4>File and Folder Tasks</h4>
+            <ul aria-hidden="true">
+              <li>Make a new folder</li>
+              <li>Publish this folder to the Web</li>
+              <li>Share this folder</li>
+            </ul>
+          </section>
+          <section class="exp-task-box">
+            <h4>Other Places</h4>
+            <ul>
+              {otherPlaces.map((o) => (
+                <li key={o.label}>
+                  <button type="button" onClick={() => openWindow(o.window)}>
+                    <img src={o.icon} alt="" />
+                    {o.label}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </section>
+          <section class="exp-task-box">
+            <h4>Details</h4>
+            {project ? (
+              <div class="exp-details">
+                <b>{project.name}</b>
+                <span>{project.kind}</span>
+                {project.event && <span>{project.event}</span>}
+                {project.award && <span class="exp-award">🏆 {project.award}</span>}
+              </div>
+            ) : (
+              <div class="exp-details">
+                <b>Projects</b>
+                <span>File Folder</span>
+                <span>
+                  {PROJECTS.length} projects · {awards} awards
+                </span>
+              </div>
+            )}
+          </section>
+        </aside>
+
+        <section class="exp-main" aria-label={project ? project.name : "Projects"}>
+          {project ? (
+            <article class="exp-doc">
+              <header class="exp-doc-head">
+                <img src={project.icon} alt="" />
+                <div>
+                  <h3>{project.name}</h3>
+                  <p>
+                    {[project.kind, project.event, project.award].filter(Boolean).join(" · ")}
+                  </p>
+                </div>
+              </header>
+              <ul>
+                {project.bullets.map((b) => (
+                  <li key={b}>{b}</li>
+                ))}
+              </ul>
+              {project.link && (
+                <a class="xp-button exp-doc-link" href={project.link.href} target="_blank" rel="noopener noreferrer">
+                  {project.link.label} ↗
+                </a>
+              )}
+            </article>
+          ) : (
+            <ul class="exp-tiles">
+              {PROJECTS.map((p) => (
+                <li key={p.name}>
+                  <button type="button" class="exp-tile" onClick={() => openProject(p.name)}>
+                    <img src={p.icon} alt="" />
+                    <span class="exp-tile-text">
+                      <span class="exp-tile-name">{p.name}</span>
+                      <span>{p.kind}</span>
+                      {(p.event || p.award) && <span>{[p.event, p.award].filter(Boolean).join(" · ")}</span>}
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      </div>
+
+      <div class="exp-status">
+        <span>{project ? `${project.bullets.length} items` : `${PROJECTS.length} objects`}</span>
+        <span>{project ? "Click Back to return to Projects" : "Click a project to open it"}</span>
+      </div>
+    </div>
+  );
+}
+
+function XPWindow({ title, children, onClose, onFocus, zIndex, contentClass }: WindowProps) {
   const isMobile = useIsMobile();
   const [pos, setPos] = useState({ x: 180, y: 100 });
   const [size, setSize] = useState({ w: 600, h: 520 });
@@ -160,7 +855,7 @@ function XPWindow({ title, children, onClose, onFocus, zIndex }: WindowProps) {
         </button>
       </div>
 
-      <div class="xp-content">{children}</div>
+      <div class={`xp-content ${contentClass ?? ""}`}>{children}</div>
       <div class="resize-handle" onMouseDown={startResize} />
     </div>
   );
@@ -257,7 +952,7 @@ export function App() {
       if (existing) {
         return [...prev.filter((w) => w.id !== id), existing];
       }
-      return [...prev, { id, title: icon.label }];
+      return [...prev, { id, title: WINDOW_TITLES[id] ?? icon.label }];
     });
   }
 
@@ -267,208 +962,177 @@ export function App() {
 
   function getWindowContent(id: string) {
     if (id === "folder") {
-      return (
-        <>
-          <h2>Projects</h2>
-          <hr/>
-            <div class="resume-entry">
-            <div>
-              <h3>S&P Inclusion Predictor (Laurier Data Minds 2026) - 2nd Place</h3>
-            </div>
-            </div>
-            <div class="resume-bullets">
-              <ul>
-                <li>
-                  Developed an S&P 500 inclusion prediction model using a two-stage pipeline combining hard eligibility filters with multi-factor scoring
-                </li>
-                <li>
-                  Applied financial screening criteria including market capitalization, domicile, GAAP profitability, liquidity, trading volume, and public float to identify eligible candidate firms
-                </li>
-                <li>
-                  Built a scoring model using sector gap analysis, S&P MidCap 400 membership, profitability margin, market capitalization, and FinBERT-based news sentiment analysis
-                </li>
-                <li>
-                  Created a dashboard/demo to visualize candidate filtering, score breakdowns, and top-ranked predicted S&P 500 additions
-                </li>
-                <li>
-                  Backtested the model across 40 historical S&P inclusion events, with selected additions appearing in the model’s top 10 rankings 78% of the time
-                </li>
-                <li>
-                  Identified limitations and future improvements, including enhanced backtesting, automated weight optimization, and expanded NLP sentiment integration
-                </li>
-              </ul>
-            </div>
-
-          <hr/>
-            <div class="resume-entry">
-            <div>
-              <h3>Deepfake Research Presentation (Map the System 2026) - Finalist</h3>
-            </div>
-            </div>
-            <div class="resume-bullets">
-              <ul>
-                <li>
-                  Selected as a finalist for Map the System 2026 for a systems-thinking research project analyzing AI-powered deepfake sexual exploitation in North America
-                </li>
-                <li>
-                  Conducted research on non-consensual intimate-image deepfakes, focusing on technological accessibility, legal gaps, platform accountability, and gender-based harm
-                </li>
-                <li>
-                  Developed system maps, stakeholder maps, an Iceberg Model, and PESTEL analysis to identify root causes, reinforcing loops, and intervention points
-                </li>
-                <li>
-                  Proposed a three-pronged intervention strategy addressing legal reform, stakeholder collaboration, and public awareness through the Six Conditions of Systems Change framework
-                </li>
-                <li>
-                  Presented findings on deepfake NCII, including the role of AI accessibility, weak legal protections, and societal stigma in sustaining online exploitation
-                </li>
-              </ul>
-            </div>
-
-          <hr/>
-            <div class="resume-entry">
-            <div>
-              <h3>Cloud Cost Budgeting Platform for Magnet Forensics</h3>
-            </div>
-            </div>
-            <div class="resume-bullets">
-              <ul>
-                <li>
-                  Created a budgeting platform that integrated with current cloud cost collection practices to allows users to seamlessly budget cloud costs for the next year
-                </li>
-                <li>
-                  Provides users with a variety of automated forecasts based on trend analysis and moving averages based on current costs
-                </li>
-                <li>
-                  Allows users to export data to in various formats to easily integrate with budget keeping practices and data analysis
-                </li>
-                <li>
-                  Leveraged AI solutions to streameline the development process and create a more intuitive user experience
-                </li>
-              </ul>
-            </div>
-
-            <hr/>
-            <div class="resume-entry">
-            <div>
-              <h3>VLR API</h3>
-            </div>
-            </div>
-            <div class="resume-bullets">
-              <ul>
-                <li>
-                  Created an unofficial Valorant API for e-sports with easy access to a variety of data surrounding the game, including player stats, match history, kda and more
-                </li>
-              </ul>
-            </div>
-
-            <hr/>
-            <div class="resume-entry">
-            <div>
-              <h3>
-                <a href="/mr_scraper/" target="_blank" rel="noopener noreferrer">
-                  MR Scraper{" "}
-                </a>
-              </h3>
-            </div>
-            </div>
-            <div class="resume-bullets">
-              <ul>
-                <li>
-                  Built a Marvel Rivals scouting tool that looks up a full enemy lineup and shows each player's competitive match history, current and peak rank, and most-played heroes overall and per objective mode
-                </li>
-                <li>
-                  Suggests bans by weighing the lineup's hero pools against the current ranked meta, with one-trick detection and a breakdown of how each score came about
-                </li>
-                <li>
-                  Pulls from two community stats APIs behind same-origin proxies with automatic fallback, caching, and rate-limit handling; built with Preact, TypeScript and Cloudflare Pages Functions
-                </li>
-              </ul>
-            </div>
-
-            <hr/>
-            <div class="resume-entry">
-            <div>
-              <h3>Integrated Case Competition - Semi Finalist</h3>
-            </div>
-            </div>
-            <div class="resume-bullets">
-              <ul>
-                <li>
-                  Researched, analyzed and presented consumer purchasing and foot traffic trends in the Waterloo Region
-                </li>
-                <li>
-                  Strong quantitative analysis skills as showcased through statistical analysis & projection techniques to provide insight into current and future trends
-                </li>
-                <li>
-                  Presented data surrounding the feasibility, viability, and desirability in a clear, concise, and accurate PowerPoint
-                </li>
-              </ul>
-            </div>
-            
-            <hr/>
-            <div class="resume-entry">
-            <div>
-              <h3>Housing Market Predictor (DataFest Hackathon 2025) - 2nd Place</h3>
-            </div>
-            </div>
-            <div class="resume-bullets">
-              <ul>
-                <li>
-                  Researched, planned and presented insights surrounding the United States commercial real estate market
-                </li>
-                <li>
-                  Strong quantitative analysis skills as showcased through statistical analysis & projection techniques to provide insight into current and future trend
-                </li>
-                <li>
-                  Researched, collected, analyzed, and summarized information and trends surrounding the commercial real estate market in the United States
-                </li>
-              </ul>
-            </div>
-            <br/>
-
-            <hr/>
-            <div class="resume-entry">
-            <div>
-              <h3>Scouting App</h3>
-            </div>
-            </div>
-            <div class="resume-bullets">
-              <ul>
-                <li>
-                  Developed a scouting app for my robotics team to easily collect and analyze data on our own and our competitors' robots during competitions
-                </li>
-                <li>
-                  Simple UI & UX allowed for quick and efficient data collection during the fast paced environment of competitions, leading to better strategy decisions and improved robot performance
-                </li>
-              </ul>
-            </div>
-        </>
-      );
+      return <ExplorerProjects openWindow={openWindow} />;
     }
 
     if (id === "about") {
+      const nav: { label: string; window: string }[] = [
+        { label: "Home", window: "about" },
+        { label: "Projects", window: "folder" },
+        { label: "Resume", window: "notepad" },
+        { label: "Music", window: "music" },
+        { label: "Games", window: "games" },
+        { label: "Contact", window: "contact" },
+      ];
+      const contactLinks: { label: string; window: string }[] = [
+        { label: "Send Message", window: "contact" },
+        { label: "View Resume", window: "notepad" },
+        { label: "See Projects", window: "folder" },
+        { label: "Hear My Vinyl", window: "music" },
+      ];
+      const topGames = [
+        { title: "Baldur's Gate 3", cover: bg3 },
+        { title: "Elden Ring", cover: eldenRing },
+        { title: "Counter-Strike 2", cover: cs2 },
+        { title: "Stardew Valley", cover: stardewValley },
+        { title: "Balatro", cover: balatro },
+      ];
       return (
         <>
-          <h2>Hi, I'm Rakshaa!</h2>
-          <h3>Welcome to my desktop!</h3>
-          <p>
-            I’m a BBA + Computer Science student passionate about building useful, creative, and data-driven tools. My experience spans cloud FinOps, audit, and software development, including work on budgeting platforms, AI chatbots, and cost-optimization projects. I like combining business thinking with technical problem-solving to make systems cleaner, smarter, and easier to use.
-          </p>
-          <p>
-            Outside of school & work I have a variety of hobbies and interests. 
-            One of my big ones is playing video games, which is what inspired me to pursue computer science in the first place! 
-            Some of my favourite games include Baulders Gate 3, Pokemon Pokopia, Counter Strike and Elden Ring. 
-            Additionally, I love music (consistently get over 100,000 hours on spotify every year lol) and play the piano, guitar, saxophone(alto, tenor & soprano) and trombone. 
-            Due to my love for music, I was part of a Jazz Band, Vocal Jazz Band, Senior Wind Ensemble & Choir throughout high school. 
-            I'm also currently learning how to garden & started as a Dungeon Master for my friends which has been a fun yet tough learning experience so far! 
-          </p>
-          <p>
-            This portfolio is a playful way to share my projects and experience. Feel free to explore the icons, open the windows, and check out my resume and contact info. I’m always excited to connect with new people, so don’t hesitate to reach out!
-          </p>
-          <button class="xp-button" onClick={() => openWindow("contact")}> 
-            Contact Me
-          </button>
+          {/* A mid-2000s social profile page, under Rakshaa's own handle. */}
+          <div class="sp-top">
+            <span class="sp-logo">
+              SpaceRock<span>'s Space</span>
+            </span>
+            <nav class="sp-nav">
+              {nav.map((n, i) => (
+                <span key={n.label}>
+                  {i > 0 && " | "}
+                  <button type="button" onClick={() => openWindow(n.window)}>
+                    {n.label}
+                  </button>
+                </span>
+              ))}
+            </nav>
+          </div>
+
+          <div class="sp-page">
+            <div class="sp-left">
+              <h2 class="sp-name">Rakshaa</h2>
+              <div class="sp-intro">
+                <div class="sp-photo" aria-label="No photo">
+                  <svg viewBox="0 0 64 64" aria-hidden="true">
+                    <circle cx="32" cy="23" r="12" />
+                    <path d="M8 62c0-14 11-22 24-22s24 8 24 22z" />
+                  </svg>
+                </div>
+                <div class="sp-intro-text">
+                  <p>"building things :)"</p>
+                  <p>
+                    Waterloo,
+                    <br />
+                    Ontario
+                    <br />
+                    Canada
+                  </p>
+                  <p class="sp-online">
+                    <span class="sp-online-dot" /> Online Now!
+                  </p>
+                </div>
+              </div>
+              <p class="sp-mood">
+                <b>Mood:</b> creative 🎶
+              </p>
+
+              <div class="sp-box">
+                <h3 class="sp-box-title">Contacting Rakshaa</h3>
+                <div class="sp-contact-grid">
+                  {contactLinks.map((c) => (
+                    <button key={c.label} type="button" onClick={() => openWindow(c.window)}>
+                      {c.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div class="sp-box">
+                <h3 class="sp-box-title">Rakshaa's Details</h3>
+                <table class="sp-table">
+                  <tbody>
+                    <tr>
+                      <th>Status:</th>
+                      <td>Student</td>
+                    </tr>
+                    <tr>
+                      <th>Studying:</th>
+                      <td>BBA (Laurier) + Computer Science (Waterloo)</td>
+                    </tr>
+                    <tr>
+                      <th>Instruments:</th>
+                      <td>Piano, guitar, saxophone (alto, tenor &amp; soprano), trombone</td>
+                    </tr>
+                    <tr>
+                      <th>Ensembles:</th>
+                      <td>Jazz Band, Vocal Jazz Band, Senior Wind Ensemble &amp; Choir (high school)</td>
+                    </tr>
+                    <tr>
+                      <th>Clubs:</th>
+                      <td>Alpha Dogs Robotics, UW Marvel Rivals, Stats Club</td>
+                    </tr>
+                    <tr>
+                      <th>Side quest:</th>
+                      <td>Dungeon Master for friends</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="sp-right">
+              <div class="sp-box">
+                <h3 class="sp-box-title">About me:</h3>
+                <div class="sp-blurb">
+                  <p>
+                    I’m a BBA + Computer Science student passionate about building useful, creative, and data-driven tools. My experience spans cloud FinOps, audit, and
+                    software development, including work on budgeting platforms, AI chatbots, and cost-optimization projects. I like combining business thinking with
+                    technical problem-solving to make systems cleaner, smarter, and easier to use.
+                  </p>
+                  <p>
+                    Video games are what inspired me to pursue computer science in the first place! I also love music (consistently over 100,000 minutes on Spotify every
+                    year lol), and I'm currently learning how to garden.
+                  </p>
+                  <p>
+                    This portfolio is a playful way to share my projects and experience. Feel free to explore the icons, open the windows, and check out my resume and
+                    contact info. I’m always excited to connect with new people, so don’t hesitate to reach out!
+                  </p>
+                </div>
+              </div>
+
+              <div class="sp-box">
+                <h3 class="sp-box-title">Rakshaa's Interests</h3>
+                <table class="sp-table">
+                  <tbody>
+                    <tr>
+                      <th>General:</th>
+                      <td>Video games, music, gardening, D&amp;D</td>
+                    </tr>
+                    <tr>
+                      <th>Music:</th>
+                      <td>Jazz, collecting vinyl, a little of everything</td>
+                    </tr>
+                    <tr>
+                      <th>Games:</th>
+                      <td>Baldur's Gate 3, Pokémon Pokopia, Counter-Strike, Elden Ring</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="sp-box">
+                <h3 class="sp-box-title">Rakshaa's Top {topGames.length}</h3>
+                <ul class="sp-top-grid">
+                  {topGames.map((g) => (
+                    <li key={g.title}>
+                      <button type="button" onClick={() => openWindow("games")} title={g.title}>
+                        <img src={g.cover} alt="" loading="lazy" />
+                        <span>{g.title}</span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </div>
         </>
       );
     }
@@ -476,6 +1140,39 @@ export function App() {
     if (id === "notepad") {
       return (
         <>
+          {/* Word 97 chrome: menu bar, formatting toolbar and ruler. All decorative. */}
+          <div class="word-chrome" aria-hidden="true">
+            <div class="word-menu">
+              {WORD_MENUS.map((m) => (
+                <span key={m} class="word-menu-item">
+                  <u>{m[0]}</u>
+                  {m.slice(1)}
+                </span>
+              ))}
+            </div>
+            <div class="word-toolbar">
+              <span class="word-grip" />
+              <span class="word-select is-style">Normal</span>
+              <span class="word-select is-font">Times New Roman</span>
+              <span class="word-select is-size">12</span>
+              <span class="word-sep" />
+              <span class="word-btn is-bold">B</span>
+              <span class="word-btn is-italic">I</span>
+              <span class="word-btn is-underline">U</span>
+              <span class="word-sep" />
+              <span class="word-btn word-align is-left is-pressed" />
+              <span class="word-btn word-align is-center" />
+              <span class="word-btn word-align is-right" />
+              <span class="word-btn word-align is-justify" />
+              <span class="word-sep" />
+              <span class="word-btn word-bullets" />
+            </div>
+            <div class="word-ruler">
+              <span class="word-ruler-track" />
+            </div>
+          </div>
+          <div class="word-workspace">
+          <div class="word-page">
           <h2>Resume</h2>
 
           <section>
@@ -525,10 +1222,13 @@ export function App() {
               <div class="resume-bullets">
                 <ul>
                   <li>
-                    Designed and ran the tryout process, including a structured soft-skills rubric to standardize evaluation across multiple evaluators and reduce selection bias
+                    Organized tryouts and team building events, using a structured soft-skills rubric to standardize evaluation across evaluators and building team cohesion beyond scrims
                   </li>
                   <li>
-                    Test roster configurations systematically by holding variables constant across consecutive scrims, isolating the effect of individual lineup and role changes on team performance
+                    Support players in balancing competitive commitments with their academic and work loads, planning practice schedules around their availability to prevent burnout
+                  </li>
+                  <li>
+                    Built scouting tools that analyze opposing lineups' match histories to recommend bans and counter team comps from hero matchup data, informing strategy and comp building
                   </li>
                 </ul>
               </div>
@@ -543,16 +1243,16 @@ export function App() {
               <div class="resume-bullets">
                 <ul>
                   <li>
-                    Analyzed large-scale marketing campaign datasets to assess campaign health, track performance trends, and identify areas for improvement
+                    Analyzed marketing campaign performance to identify trends, performance drivers, and opportunities, and helped enhance campaign dashboards for ongoing KPI monitoring
                   </li>
                   <li>
-                    Generated data-driven insights and reports to support strategic marketing decisions and improve campaigns
+                    Conducted A/B tests to evaluate campaign effectiveness and compare performance across customer groups
                   </li>
                   <li>
-                    Collaborated with stakeholders to communicate statistical findings, campaign results, and performance recommendations
+                    Led a term-long deep dive into an underperforming campaign, using Heterogeneous Treatment Effect (HTE) analysis and uplift modelling to pinpoint internal and external failure points and improve targeting
                   </li>
                   <li>
-                    Provided actionable recommendations based on quantitative analysis to optimize marketing campaigns and support business objectives
+                    Presented findings and recommendations to campaign managers, senior management, and Vice Presidents to inform campaign strategy, targeting, and execution
                   </li>
                 </ul>
               </div>
@@ -614,7 +1314,7 @@ export function App() {
                   <strong>Vice President of Finance</strong>
                   <div><i>University of Waterloo Statistics Club</i></div>
                 </div>
-                <div class="resume-year">May 2024 - Present</div>
+                <div class="resume-year">May 2024 - Apr 2026</div>
               </div>
               <div class="resume-bullets">
                 <ul>
@@ -711,8 +1411,20 @@ export function App() {
                 </li>
               </ul>
             </div>
-              <br/>
           </section>
+          <span class="word-caret" aria-hidden="true" />
+          </div>
+          </div>
+          <div class="word-status" aria-hidden="true">
+            <span>Page 1</span>
+            <span>Sec 1</span>
+            <span>1/1</span>
+            <span class="word-status-grow">At 1"   Ln 1   Col 1</span>
+            <span class="is-dim">REC</span>
+            <span class="is-dim">TRK</span>
+            <span class="is-dim">EXT</span>
+            <span class="is-dim">OVR</span>
+          </div>
         </>
       );
     }
@@ -720,52 +1432,62 @@ export function App() {
     if (id === "contact") {
       return (
         <>
-          <h2>Contact Me!</h2>
-          <p>Email: 
-            <a href={"mailto:rakshaajeyarajah@gmail.com"} target="_blank" rel="noopener noreferrer">
-              rakshaajeyarajah@gmail.com
-            </a>
-          </p>
-          <p>LinkedIn: 
-            <a href={"https://www.linkedin.com/in/rakshaa-jeyarajah-880427250/"} target="_blank" rel="noopener noreferrer">
-              Rakshaa Jeyarajah
-            </a>
-          </p>
-          <p>X/Twitter: 
-            <a href={"https://x.com/sp4cer0ck?s=21&t=tc9N0VsXk2wx8TYMiyL5LQ"} target="_blank" rel="noopener noreferrer">
-              SpaceRock
-            </a>
-          </p>
-          <p>GitHub:
-            <a href={"https://github.com/rakshaaJey"} target="_blank" rel="noopener noreferrer">
-              RakshaaJey
-            </a>
-          </p>
-          <p>Discord: 
-              space_rock
-          </p>
+          {/* Windows 98 Address Book contact card. The tabs other than Summary are decorative. */}
+          <div class="card-tabs" aria-hidden="true">
+            {CARD_TABS.map((t, i) => (
+              <span key={t} class={`card-tab ${i === 0 ? "is-active" : ""}`}>
+                {t}
+              </span>
+            ))}
+          </div>
+          <div class="card-panel">
+            <div class="card-head">
+              <span class="card-photo">
+                <img src={contact} alt="" />
+              </span>
+              <div>
+                <h2 class="card-name">Rakshaa Jeyarajah</h2>
+                <p class="card-aka">a.k.a. SpaceRock</p>
+                <p class="card-role">Computer Science &amp; Business student · Waterloo, ON</p>
+              </div>
+            </div>
+
+            <div class="card-group">
+              <p class="card-group-title">Summary of information about this contact</p>
+              <dl class="card-fields">
+                {CONTACT_FIELDS.map((f) => (
+                  <div class="card-field" key={f.label}>
+                    <dt>{f.label}:</dt>
+                    <dd class="card-box">
+                      {f.href ? (
+                        <a href={f.href} target="_blank" rel="noopener noreferrer">
+                          {f.value}
+                        </a>
+                      ) : (
+                        f.value
+                      )}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
+
+            <div class="card-actions">
+              <a class="xp-button card-button" href="mailto:rakshaajeyarajah@gmail.com">
+                <u>S</u>end Mail
+              </a>
+              <a class="xp-button card-button" href="https://www.linkedin.com/in/rakshaa-jeyarajah-880427250/" target="_blank" rel="noopener noreferrer">
+                <u>C</u>onnect
+              </a>
+            </div>
+          </div>
         </>
       );
     }
 
     if (id === "music") {
-      interface MySong {
-        title: string;
-        artist: string;
-        album: string;
-        cover: string;
-      }
-      
-      interface MyRecord {
-        id: number;
-        title: string;
-        artist: string;
-        year: number;
-        cover: string;
-      }
-
-      const [songs, setSongs] = useState<MySong[]>([]);
       const [records, setRecords] = useState<MyRecord[]>([]);
+      const [loadFailed, setLoadFailed] = useState(false);
 
       useEffect(() => {
         // Public Discogs collection: no API key needed, and the API allows cross-origin requests
@@ -788,153 +1510,24 @@ export function App() {
                 cover: release.basic_information.cover_image
               }));
 
+            // Shuffle (Fisher-Yates) so the player starts on a different record each time the window opens.
+            for (let i = extractedRecords.length - 1; i > 0; i--) {
+              const j = Math.floor(Math.random() * (i + 1));
+              [extractedRecords[i], extractedRecords[j]] = [extractedRecords[j], extractedRecords[i]];
+            }
             setRecords(extractedRecords);
           })
           .catch((error) => {
             console.error('Error fetching Discogs collection:', error);
+            setLoadFailed(true);
           });
       }, []);
 
-      useEffect(() => {
-        fetch('topTracks.json')
-          .then((response) => {
-            if (!response.ok) {
-              throw new Error('Network response was not ok');
-            }
-            return response.json();
-          })
-          .then((data: any[]) => {
-            // Extract the desired fields from the Spotify API response
-            const extractedSongs: MySong[] = data.map(track => ({
-              title: track.name,
-              artist: track.artists.map((artist: any) => artist.name).join(', '),
-              album: track.album.name,
-              cover: track.album.images[0]?.url || ''
-            }));
-            
-            // Randomly select 5 songs from the 20
-            const shuffled = extractedSongs.sort(() => 0.5 - Math.random());
-            const selectedSongs = shuffled.slice(0, 5);
-            
-            setSongs(selectedSongs);
-          })
-          .catch((error) => {
-            console.error('Error reading JSON file:', error);
-          });
-      }, []);
-      
-      return (
-        <>
-          <h2>What I'm Listening To</h2>
-          <hr/>
-          <p>I listen to a wide variety of music so here are some songs that I have on repeat!</p>
-          <div class="music-list">
-            {songs.map((song, index) => (
-              <div class="music-row" key={index}>
-                <img src={song.cover} class="music-cover" />
-
-                <div class="music-info">
-                  <div class="music-title">{song.title}</div>
-                  <div class="music-subtitle">
-                    {song.artist} · {song.album}
-                  </div>
-                </div>
-
-                <button class="music-more">...</button>
-              </div>
-            ))}
-          </div>
-
-          {records.length > 0 && (
-            <>
-              <h2>My Vinyl Collection</h2>
-              <hr/>
-              <p>
-                I also collect vinyl! Here's what's on my shelf right now
-                (<a href="https://www.discogs.com/user/SP4CER0CK/collection" target="_blank" rel="noopener noreferrer">see it on Discogs</a>).
-              </p>
-              <div class="vinyl-grid">
-                {records.map((record) => (
-                  <a
-                    class="vinyl-item"
-                    key={record.id}
-                    href={`https://www.discogs.com/release/${record.id}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    title={`${record.title} · ${record.artist}`}
-                  >
-                    <img src={record.cover} class="vinyl-cover" alt={record.title} loading="lazy" />
-                    <div class="music-title vinyl-text">{record.title}</div>
-                    <div class="music-subtitle vinyl-text">
-                      {record.artist}{record.year ? ` · ${record.year}` : ''}
-                    </div>
-                  </a>
-                ))}
-              </div>
-            </>
-          )}
-        </>
-      );
+      return <VinylPlayer records={records} status={loadFailed ? "error" : records.length ? "ready" : "loading"} />;
     }
 
     if (id === "games") {
-      const games = [
-        {
-          title: "Baulder's Gate 3",
-          hoursPlayed: "650+",
-          achievements: "50/54",
-          cover: bg3,
-        },
-        {
-          title: "Stardew Valley",
-          hoursPlayed: "250+",
-          achievements: "30/49",
-          cover: stardewValley,
-        },
-        {
-          title: "Counter-Strike 2",
-          hoursPlayed: "160+",
-          achievements: "1/1",
-          cover: cs2,
-        },
-        {
-          title: "Elden Ring",
-          hoursPlayed: "160+",
-          achievements: "25/42",
-          cover: eldenRing,
-        },
-        {
-          title: "Balatro",
-          hoursPlayed: "100+",
-          achievements: "27/31",
-          cover: balatro,
-        },
-        
-      ];
-      return (
-        <>
-          <h2>What I'm Playing</h2>
-          <hr/>
-          <p>I play a wide variety of games (but my favourites are RPGs, strategy games, and cozy games!)</p>
-          <div class="music-list">
-            {games.map((games) => (
-              <div class="music-row" key={games.title}>
-                <img src={games.cover} class="music-cover" />
-
-                <div class="music-info">
-                  <div class="music-title">{games.title}</div>
-                  <div class="music-subtitle">
-                    Hours Played: {games.hoursPlayed} · {games.achievements} achievements unlocked
-                  </div>
-                </div>
-
-                <button class="music-more">...</button>
-              </div>
-            ))}
-          </div>
-          
-        </>
-      );
+      return <SteamLibrary />;
     }
 
     return <p>Empty window</p>;
@@ -963,6 +1556,7 @@ export function App() {
             onClose={() => closeWindow(win.id)}
             onFocus={() => bringToFront(win.id)}
             zIndex={100 + index}
+            contentClass={WINDOW_CONTENT_CLASS[win.id]}
           >
             {getWindowContent(win.id)}
           </XPWindow>
@@ -985,7 +1579,7 @@ export function App() {
                 <ul>
                   <li>Tap an icon to open its associated window</li>
                   <li>Use the taskbar buttons to switch between windows</li>
-                  <li>Scroll the taskbar sideways to see all icons</li>
+                  <li>Every window has an icon in the taskbar at the bottom</li>
                 </ul>
               ) : (
                 <ul>
@@ -1008,17 +1602,19 @@ export function App() {
         </button>
 
         <div class="taskbar-tasks">
-          {/* The mobile taskbar scrolls sideways, so it has room for every window. */}
+          {/* On phones every window gets a button, shown icon-only so all of them fit on screen. */}
           {(isMobile ? icons : icons.slice(0, 4)).map((icon) => (
             <button
               class="task-button"
               key={icon.id}
+              aria-label={icon.label}
+              title={icon.label}
               onClick={() => openWindow(icon.id)}
             >
               <span>
-                <img src={icon.img} class="icon" />
+                <img src={icon.img} class="icon" alt="" />
               </span>
-              {icon.label}
+              <span class="task-label">{icon.label}</span>
             </button>
           ))}
         </div>

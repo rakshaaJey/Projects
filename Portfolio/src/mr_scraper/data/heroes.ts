@@ -56,6 +56,7 @@ export const HEROES: Record<number, string> = {
   1065: "Rogue",
   1066: "The Hood",
   1067: "Gorr The God Butcher",
+  1068: "Nightcrawler",
   10571: "Deadpool (Vanguard)",
   10572: "Deadpool (Duelist)",
   10573: "Deadpool (Strategist)",

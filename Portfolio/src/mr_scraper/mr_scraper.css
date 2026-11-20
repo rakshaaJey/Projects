@@ -940,6 +940,90 @@
   color: var(--sc-muted);
 }
 
+/* Counter comp: reuses the ban cards, with the card's top edge in the pick's role colour. */
+
+.mr-comp-card.is-tank { --mr-role: #7cb6ff; }
+.mr-comp-card.is-dps { --mr-role: #ff7a7a; }
+.mr-comp-card.is-support { --mr-role: #7fe0a0; }
+
+.mr-comp-card,
+.mr-comp-card:hover,
+.mr-comp-card:focus-visible {
+  border-top-color: var(--mr-role, var(--sc-accent));
+}
+
+.mr-comp-card .mr-role {
+  font-size: 0.65rem;
+}
+
+.mr-comp-slots {
+  margin-top: 12px;
+}
+
+.mr-slot-step {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.9rem;
+}
+
+.mr-slot-step.is-tank { --mr-role: #7cb6ff; }
+.mr-slot-step.is-dps { --mr-role: #ff7a7a; }
+.mr-slot-step.is-support { --mr-role: #7fe0a0; }
+.mr-slot-step.is-flex { --mr-role: #d07cff; }
+
+.mr-slot-label {
+  min-width: 4.2em;
+  font-weight: 700;
+  color: var(--mr-role, var(--sc-fg));
+}
+
+.mr-slot-btn {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  font: inherit;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--sc-fg);
+  background: transparent;
+  border: 1px solid var(--sc-muted);
+  cursor: pointer;
+}
+
+.mr-slot-btn:hover:not(:disabled),
+.mr-slot-btn:focus-visible {
+  outline: none;
+  border-color: var(--mr-role, var(--sc-accent));
+}
+
+.mr-slot-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.mr-slot-count {
+  min-width: 1.2em;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.mr-comp-edges {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 8px 24px;
+}
+
+.mr-comp-edges .mr-modes-title {
+  margin: 0 0 4px;
+}
+
+.mr-comp-edges .mr-ban-player {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
 /* Hero portraits (public/mr_scraper/heroes, see data/portraits.ts): square art, cropped to fit wherever a hero is named. */
 .mr-hero-img {
   flex: none;
